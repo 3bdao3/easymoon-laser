@@ -1,0 +1,31 @@
+# Easy Moon frontend — optional Web Service image (if Static Site is not used)
+# Prefer runtime: static in render.yaml. Use this only when deploying as a Docker Web Service.
+#
+# Build (repo root):
+#   docker build -f Dockerfile.frontend --build-arg API_BASE_URL=https://easymoon-api.onrender.com -t easymoon-web .
+#
+# Render Web Service: Dockerfile path = Dockerfile.frontend, context = .
+
+FROM node:20-alpine AS build
+WORKDIR /app
+
+COPY frontend/erpclink-web/package.json frontend/erpclink-web/package-lock.json ./
+RUN npm install
+
+COPY frontend/erpclink-web/ ./
+
+ARG API_BASE_URL=
+ENV API_BASE_URL=$API_BASE_URL
+
+RUN npm run build:prod
+
+FROM node:20-alpine AS final
+WORKDIR /app
+RUN npm install --global serve@14
+COPY --from=build /app/dist/erpclink-web/browser ./dist
+
+ENV PORT=8080
+EXPOSE 8080
+
+# -s = SPA mode (all missing paths → index.html). Bind Render's PORT.
+CMD ["sh", "-c", "serve -s dist -l tcp://0.0.0.0:${PORT:-8080}"]

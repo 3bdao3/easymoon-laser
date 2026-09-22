@@ -1,0 +1,55 @@
+# Easy Moon — Render Blueprint
+# Architecture: Angular Static Site + ASP.NET Core API (Docker) + Azure SQL (external)
+#
+# Dashboard: New → Blueprint → connect this repo → apply.
+# Or create the two services manually using the settings documented in PUBLISH.md.
+
+services:
+  # ── Frontend (Angular SPA) ──────────────────────────────────────────────
+  # MUST be a Static Site (runtime: static), not a Docker/Node Web Service.
+  - type: web
+    name: easymoon-web
+    runtime: static
+    plan: free
+    # Build runs from this directory (monorepo).
+    rootDir: frontend/erpclink-web
+    buildCommand: npm install && npm run build:prod
+    # IMPORTANT: path is relative to the REPO ROOT (not rootDir).
+    # Angular 19 application builder → dist/<project>/browser
+    staticPublishPath: frontend/erpclink-web/dist/erpclink-web/browser
+    routes:
+      # SPA fallback so /app/dashboard and refresh work (files take precedence).
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Bake API origin into the Angular bundle at build time (no trailing slash).
+      - key: API_BASE_URL
+        sync: false
+
+  # ── Backend (ASP.NET Core 9 API) ─────────────────────────────────────────
+  - type: web
+    name: easymoon-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        sync: false
+      - key: Authentication__Jwt__SigningKey
+        generateValue: true
+      # Exact Static Site origin, e.g. https://easymoon-web.onrender.com (no trailing slash)
+      - key: FRONTEND_URL
+        sync: false
+      - key: Authentication__InitialAdmin__Email
+        sync: false
+      - key: Authentication__InitialAdmin__Password
+        sync: false
+      - key: Authentication__InitialReceptionist__UserName
+        value: socialmedia
+      - key: Authentication__InitialReceptionist__Password
+        sync: false

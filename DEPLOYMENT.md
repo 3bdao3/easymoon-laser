@@ -141,7 +141,10 @@ https://easymoon-api.onrender.com/health
 
 ## STEP 8 — Create the Render Angular Static Site
 
-1. Render → **New** → **Static Site**.
+> **Critical:** Use **New → Static Site**, not Web Service.  
+> A Web Service (or a failed/empty Static Site) on `easymoon-web.onrender.com` returns plain `Not Found` with `x-render-routing: no-server`.
+
+1. Render → **New** → **Static Site** (or apply [`render.yaml`](./render.yaml) Blueprint).
 2. Connect the same GitHub repo.
 3. Settings:
 
@@ -149,9 +152,17 @@ https://easymoon-api.onrender.com/health
 |---------|--------|
 | Root directory | `frontend/erpclink-web` |
 | Build command | `npm install && npm run build:prod` |
+| Start command | _(none — leave empty)_ |
 | Publish directory | `dist/erpclink-web/browser` |
 
-SPA fallback: `public/_redirects` is copied into the publish folder so routes like `/login` and `/app/customers/123` work on refresh.
+4. **Redirects/Rewrites** (Dashboard → Redirects/Rewrites, or via Blueprint `routes`):
+
+| Source | Destination | Action |
+|--------|-------------|--------|
+| `/*` | `/index.html` | **Rewrite** |
+
+Angular 19 outputs to `dist/erpclink-web/browser` (not `dist/erpclink-web`).  
+`public/_redirects` is also copied into the publish folder for hosts that honor Netlify-style redirects.
 
 ---
 
