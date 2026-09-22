@@ -1,0 +1,58 @@
+<app-page-header [title]="'العروض'" [subtitle]="'باقات وعروض العيادة'">
+  <a
+    actions
+    class="btn btn--primary"
+    routerLink="new"
+    *appHasPermission="permissions.LaserOffersManage"
+  >
+    + عرض جديد
+  </a>
+</app-page-header>
+
+@if (loading()) {
+  <app-loading-spinner label="جاري التحميل…" />
+} @else if (items().length === 0) {
+  <div class="card">
+    <app-empty-state title="لا توجد عروض" message="أضيفي باقة جديدة باسم وسعر ومدة الصلاحية." />
+  </div>
+} @else {
+  <div class="offer-packages">
+    @for (row of items(); track row.id) {
+      <article class="offer-package" [class.offer-package--off]="!row.isActive">
+        <div class="offer-package__ribbon">
+          <span class="offer-package__badge" [class.offer-package__badge--off]="!row.isActive">
+            {{ row.isActive ? 'باقة نشطة' : 'موقوفة' }}
+          </span>
+        </div>
+
+        <h3 class="offer-package__title">{{ row.title }}</h3>
+
+        @if (row.description) {
+          <p class="offer-package__desc">{{ row.description }}</p>
+        }
+
+        <div class="offer-package__price">
+          <span class="offer-package__currency">ج.م</span>
+          <span class="offer-package__amount">{{ row.price }}</span>
+        </div>
+
+        <div class="offer-package__meta">
+          <div class="offer-package__meta-item">
+            <span class="offer-package__meta-label">الصلاحية</span>
+            <strong>{{ validityLabel(row) }}</strong>
+          </div>
+        </div>
+
+        <div class="offer-package__actions">
+          <a
+            class="btn btn--primary btn--sm"
+            [routerLink]="[row.id, 'edit']"
+            *appHasPermission="permissions.LaserOffersManage"
+          >
+            تعديل الباقة
+          </a>
+        </div>
+      </article>
+    }
+  </div>
+}

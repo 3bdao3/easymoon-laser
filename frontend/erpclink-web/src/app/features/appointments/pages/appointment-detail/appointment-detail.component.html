@@ -1,0 +1,131 @@
+<div class="page">
+  <app-page-header title="تفاصيل الموعد" subtitle="Appointment detail" />
+
+  @if (loading()) {
+    <app-loading-spinner label="جاري التحميل..." />
+  } @else if (appointment()) {
+    @let appt = appointment()!;
+    <div class="page__toolbar">
+      <a class="btn btn--ghost" routerLink="/app/appointments">رجوع للقائمة</a>
+      <div class="actions-cell">
+        @if (actions().canConfirm) {
+          <button
+            class="btn btn--primary btn--sm"
+            type="button"
+            *appHasPermission="permissions.AppointmentsConfirm"
+            [disabled]="actionBusy()"
+            (click)="confirmAppointment()"
+          >
+            تأكيد
+          </button>
+        }
+        @if (actions().canReschedule) {
+          <button
+            class="btn btn--ghost btn--sm"
+            type="button"
+            *appHasPermission="permissions.AppointmentsReschedule"
+            (click)="openReschedule()"
+          >
+            إعادة جدولة
+          </button>
+        }
+        @if (actions().canNoShow) {
+          <button
+            class="btn btn--ghost btn--sm"
+            type="button"
+            *appHasPermission="permissions.AppointmentsNoShow"
+            [disabled]="actionBusy()"
+            (click)="markNoShow()"
+          >
+            لم يحضر
+          </button>
+        }
+        @if (actions().canCancel) {
+          <button
+            class="btn btn--danger btn--sm"
+            type="button"
+            *appHasPermission="permissions.AppointmentsCancel"
+            [disabled]="actionBusy()"
+            (click)="cancelAppointment()"
+          >
+            إلغاء
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="detail-grid">
+        <div>
+          <span class="detail-item__label">رقم الموعد</span>
+          <span class="detail-item__value">{{ appt.appointmentNumber }}</span>
+        </div>
+        <div>
+          <span class="detail-item__label">الحالة</span>
+          <app-status-badge [status]="appt.status" />
+        </div>
+        <div>
+          <span class="detail-item__label">التاريخ</span>
+          <span class="detail-item__value">{{ formatDateOnly(appt.appointmentDate) }}</span>
+        </div>
+        <div>
+          <span class="detail-item__label">الوقت</span>
+          <span class="detail-item__value">
+            {{ formatTimeOnly(appt.startTime) }} – {{ formatTimeOnly(appt.endTime) }}
+          </span>
+        </div>
+        <div>
+          <span class="detail-item__label">المريض</span>
+          <span class="detail-item__value text-muted">{{ appt.patientId }}</span>
+        </div>
+        <div>
+          <span class="detail-item__label">الطبيب</span>
+          <span class="detail-item__value text-muted">{{ appt.doctorId }}</span>
+        </div>
+        <div>
+          <span class="detail-item__label">العيادة</span>
+          <span class="detail-item__value text-muted">{{ appt.clinicId }}</span>
+        </div>
+        <div>
+          <span class="detail-item__label">تاريخ الإنشاء</span>
+          <span class="detail-item__value">{{ formatDateTimeUtc(appt.createdAtUtc) }}</span>
+        </div>
+      </div>
+      @if (appt.reason) {
+        <p class="text-muted">السبب: {{ appt.reason }}</p>
+      }
+      @if (appt.notes) {
+        <p class="text-muted">ملاحظات: {{ appt.notes }}</p>
+      }
+      @if (appt.cancellationReason) {
+        <p class="text-muted">سبب الإلغاء: {{ appt.cancellationReason }}</p>
+      }
+    </div>
+
+    @if (showReschedule()) {
+      <div class="card">
+        <h2 class="card__title">إعادة جدولة</h2>
+        <div class="field-row">
+          <label class="field">
+            <span class="field__label">التاريخ</span>
+            <input class="field__input" type="date" [ngModel]="rescheduleDate()" (ngModelChange)="rescheduleDate.set($event)" />
+          </label>
+          <label class="field">
+            <span class="field__label">الوقت</span>
+            <input class="field__input" type="time" [ngModel]="rescheduleTime()" (ngModelChange)="rescheduleTime.set($event)" step="1" />
+          </label>
+        </div>
+        <label class="field">
+          <span class="field__label">سبب الإلغاء (اختياري — للإلغاء)</span>
+          <input class="field__input" [ngModel]="cancelReason()" (ngModelChange)="cancelReason.set($event)" />
+        </label>
+        <div class="page__toolbar">
+          <button class="btn btn--ghost" type="button" (click)="showReschedule.set(false)">إغلاق</button>
+          <button class="btn btn--primary" type="button" [disabled]="actionBusy()" (click)="submitReschedule()">
+            حفظ
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,36 @@
+@if (loading()) {
+  <app-loading-spinner />
+} @else {
+  @if (supplier(); as s) {
+    <app-page-header [title]="s.name" [subtitle]="s.supplierCode">
+      @if (s.isActive) {
+        <button
+          actions
+          type="button"
+          class="btn btn--secondary"
+          *appHasPermission="permissions.ProcurementSuppliersDeactivate"
+          (click)="toggleActive()">
+          إيقاف
+        </button>
+      } @else {
+        <button
+          actions
+          type="button"
+          class="btn btn--primary"
+          *appHasPermission="permissions.ProcurementSuppliersActivate"
+          (click)="toggleActive()">
+          تفعيل
+        </button>
+      }
+    </app-page-header>
+
+    <section class="feature-page card detail-grid">
+      <div><strong>جهة الاتصال:</strong> {{ s.contactName || '—' }}</div>
+      <div><strong>الهاتف:</strong> {{ s.phone || '—' }}</div>
+      <div><strong>البريد:</strong> {{ s.email || '—' }}</div>
+      <div><strong>العنوان:</strong> {{ s.address || '—' }}</div>
+      <div><strong>ملاحظات:</strong> {{ s.notes || '—' }}</div>
+      <div><strong>الحالة:</strong> {{ s.isActive ? 'نشط' : 'غير نشط' }}</div>
+    </section>
+  }
+}

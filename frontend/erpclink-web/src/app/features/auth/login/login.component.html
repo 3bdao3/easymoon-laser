@@ -1,0 +1,46 @@
+<div class="login-page">
+  <div class="login-card">
+    <header class="login-card__header">
+      <div class="login-brand">
+        <img class="login-brand__mark" src="easy-moon-mark.png" alt="Easy Moon" width="72" height="72" />
+        <div>
+          <p class="login-brand__name">Easy Moon</p>
+          <p class="login-brand__tag">عيادة ليزر · Laser Clinic</p>
+        </div>
+      </div>
+      <h1 class="login-card__title">تسجيل الدخول</h1>
+      <p class="login-card__subtitle">نظام حجوزات جلسات الليزر — Easy Moon</p>
+    </header>
+
+    <form class="login-form" [formGroup]="form" (ngSubmit)="submit()">
+      <label class="field">
+        <span class="field__label">البريد أو اسم المستخدم</span>
+        <input class="field__input" type="text" formControlName="email" autocomplete="username" />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <span class="field__error">أدخل البريد أو اسم المستخدم</span>
+        }
+      </label>
+
+      <label class="field">
+        <span class="field__label">كلمة المرور</span>
+        <input
+          class="field__input"
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+        />
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <span class="field__error">كلمة المرور مطلوبة (6 أحرف على الأقل)</span>
+        }
+      </label>
+
+      <button class="btn btn--primary btn--block" type="submit" [disabled]="submitting()">
+        @if (submitting()) {
+          <app-loading-spinner size="sm" label="" />
+        } @else {
+          دخول
+        }
+      </button>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,143 @@
+  <app-page-header [title]="'العملاء'" [subtitle]="'إدارة عملاء عيادة الليزر'">
+  <a actions class="btn btn--primary" routerLink="new" *appHasPermission="permissions.LaserCustomersCreate">
+    + إضافة عميلة جديدة
+  </a>
+</app-page-header>
+
+<div class="card customers-card">
+  <div class="toolbar customers-toolbar">
+    <label class="form-field search-field">
+      <span class="form-field__label">بحث</span>
+      <input
+        class="form-field__input"
+        type="search"
+        [formControl]="query"
+        placeholder="ابحث باسم العميل أو رقم الهاتف…"
+      />
+    </label>
+    <label class="form-field sort-field">
+      <span class="form-field__label">ترتيب</span>
+      <select class="form-field__select" [formControl]="sort">
+        <option value="Name">الاسم</option>
+        <option value="LastAppointment">آخر حجز</option>
+        <option value="NextAppointment">أقرب موعد قادم</option>
+        <option value="Newest">أحدث عميلة</option>
+        <option value="Oldest">أقدم عميلة</option>
+      </select>
+    </label>
+  </div>
+
+  @if (loading()) {
+    <app-loading-spinner label="جاري التحميل…" />
+  } @else if (items().length === 0) {
+    <app-empty-state
+      title="لا توجد عميلات حتى الآن"
+      message="ابدئي بإضافة عميلة وحجز أول جلسة."
+      actionLabel="إضافة عميلة جديدة"
+      (action)="goNewCustomer()"
+    />
+  } @else {
+    <div class="table-wrap">
+      <table class="table customers-table table-cards">
+        <colgroup>
+          <col class="col-num" />
+          <col class="col-name" />
+          <col class="col-phone" />
+          <col class="col-age" />
+          <col class="col-date" />
+          <col class="col-time" />
+          <col class="col-services" />
+          <col class="col-duration" />
+          <col class="col-status" />
+          <col class="col-actions" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>اسم العميل</th>
+            <th>رقم الهاتف</th>
+            <th>العمر</th>
+            <th>الموعد القادم</th>
+            <th>التوقيت</th>
+            <th>الخدمات القادمة</th>
+            <th>المدة</th>
+            <th>الحالة</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of items(); track row.id; let i = $index) {
+            <tr [class.customers-row--today]="row.nextAppointment && isToday(row.nextAppointment.date)">
+              <td class="text-muted col-num-cell" data-label="#">{{ i + 1 }}</td>
+              <td data-label="اسم العميل">
+                <a class="link" [routerLink]="[row.id]">{{ row.fullName }}</a>
+              </td>
+              <td data-label="رقم الهاتف">{{ row.phoneNumber }}</td>
+              <td data-label="العمر">{{ row.age ?? '—' }}</td>
+              @if (row.nextAppointment; as next) {
+                <td data-label="الموعد القادم">
+                  <strong>{{ formatDateAr(next.date) }}</strong>
+                </td>
+                <td data-label="التوقيت">
+                  <span class="badge badge--time">{{ formatTimeAr(next.startTime) }}</span>
+                </td>
+                <td data-label="الخدمات القادمة">
+                  <span class="services-cell" [title]="servicesTitle(next)">{{ servicesPreview(next) }}</span>
+                </td>
+                <td data-label="المدة">{{ next.durationMinutes }} دقيقة</td>
+                <td data-label="الحالة">
+                  <select
+                    class="form-field__select status-select"
+                    [class]="badgeClass(next.status)"
+                    [value]="next.status"
+                    (change)="onStatusChange(row, next, $any($event.target).value)"
+                    [disabled]="updatingStatusId() === next.id"
+                    title="تغيير الحالة"
+                  >
+                    @for (s of editableStatuses; track s) {
+                      <option [value]="s">{{ statusLabel(s) }}</option>
+                    }
+                  </select>
+                </td>
+              } @else {
+                <td class="no-next" data-label="الموعد القادم" colspan="5">
+                  <span class="no-next__text">لا يوجد موعد قادم</span>
+                  <a
+                    class="btn btn--ghost btn--sm"
+                    *appHasPermission="permissions.LaserAppointmentsCreate"
+                    [routerLink]="['/app/book']"
+                    [queryParams]="{ customerId: row.id }"
+                  >
+                    حجز موعد
+                  </a>
+                </td>
+              }
+              <td class="table-cards__actions" data-label="">
+                <div class="row-actions">
+                  <a class="btn btn--ghost btn--sm" [routerLink]="[row.id]" title="عرض">👁</a>
+                  <a
+                    class="btn btn--ghost btn--sm"
+                    [routerLink]="[row.id, 'edit']"
+                    *appHasPermission="permissions.LaserCustomersUpdate"
+                    title="تعديل"
+                  >
+                    ✎
+                  </a>
+                  <button
+                    type="button"
+                    class="btn btn--danger btn--sm"
+                    *appHasPermission="permissions.LaserCustomersUpdate"
+                    (click)="deactivate(row)"
+                    title="إيقاف"
+                  >
+                    🗑
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

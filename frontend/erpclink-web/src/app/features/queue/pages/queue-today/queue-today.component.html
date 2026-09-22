@@ -1,0 +1,145 @@
+<div class="page">
+  <app-page-header title="طابور اليوم" subtitle="Queue board" />
+
+  <div class="page__toolbar">
+    <span></span>
+    <a class="btn btn--primary" routerLink="/app/queue/check-in" *appHasPermission="permissions.QueueCheckIn">
+      تسجيل حضور
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="filters">
+      <label class="field">
+        <span class="field__label">العيادة</span>
+        <select class="field__select" [ngModel]="clinicId()" (ngModelChange)="clinicId.set($event)">
+          <option value="">— الكل —</option>
+          @for (c of clinicOptions(); track c.id) {
+            <option [value]="c.id">{{ c.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">معرّف الطبيب</span>
+        <input class="field__input" [ngModel]="doctorId()" (ngModelChange)="doctorId.set($event)" />
+      </label>
+      <label class="field">
+        <span class="field__label">الحالة</span>
+        <select class="field__select" [ngModel]="status()" (ngModelChange)="status.set($event)">
+          @for (opt of statusOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+      <button class="btn btn--primary" type="button" (click)="load()">تحديث</button>
+    </div>
+  </div>
+
+  <div class="card">
+    @if (loading()) {
+      <app-loading-spinner label="جاري التحميل..." />
+    } @else if (entries().length === 0) {
+      <app-empty-state title="الطابور فارغ" message="لا توجد عناصر لليوم الحالي." />
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الرقم</th>
+              <th>المريض</th>
+              <th>الطبيب</th>
+              <th>العيادة</th>
+              <th>الأولوية</th>
+              <th>الحالة</th>
+              <th>الحضور</th>
+              <th>النداء</th>
+              <th>الخدمة</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of entries(); track row.id) {
+              @let flags = actionFlags(row.status);
+              <tr>
+                <td><strong>{{ row.queueNumber }}</strong></td>
+                <td class="text-muted">{{ row.patientId }}</td>
+                <td class="text-muted">{{ row.doctorId }}</td>
+                <td class="text-muted">{{ row.clinicId }}</td>
+                <td>{{ row.priority }}</td>
+                <td><app-status-badge [status]="row.status" /></td>
+                <td>{{ formatDateTimeUtc(row.checkInTimeUtc) }}</td>
+                <td>{{ formatDateTimeUtc(row.calledTimeUtc) }}</td>
+                <td>
+                  @if (row.serviceStartTimeUtc) {
+                    {{ formatTimeOnly(row.serviceStartTimeUtc) }}
+                  } @else {
+                    —
+                  }
+                </td>
+                <td>
+                  <div class="actions-cell">
+                    @if (flags.canCall) {
+                      <button
+                        class="btn btn--ghost btn--sm"
+                        type="button"
+                        *appHasPermission="permissions.QueueCall"
+                        [disabled]="busyId() === row.id"
+                        (click)="runAction(row, 'call')"
+                      >
+                        نداء
+                      </button>
+                    }
+                    @if (flags.canStartService) {
+                      <button
+                        class="btn btn--ghost btn--sm"
+                        type="button"
+                        *appHasPermission="permissions.QueueStartService"
+                        [disabled]="busyId() === row.id"
+                        (click)="runAction(row, 'start')"
+                      >
+                        بدء
+                      </button>
+                    }
+                    @if (flags.canComplete) {
+                      <button
+                        class="btn btn--primary btn--sm"
+                        type="button"
+                        *appHasPermission="permissions.QueueComplete"
+                        [disabled]="busyId() === row.id"
+                        (click)="runAction(row, 'complete')"
+                      >
+                        إنهاء
+                      </button>
+                    }
+                    @if (flags.canSkip) {
+                      <button
+                        class="btn btn--ghost btn--sm"
+                        type="button"
+                        *appHasPermission="permissions.QueueSkip"
+                        [disabled]="busyId() === row.id"
+                        (click)="runAction(row, 'skip')"
+                      >
+                        تخطي
+                      </button>
+                    }
+                    @if (flags.canCancel) {
+                      <button
+                        class="btn btn--danger btn--sm"
+                        type="button"
+                        *appHasPermission="permissions.QueueCancel"
+                        [disabled]="busyId() === row.id"
+                        (click)="runAction(row, 'cancel')"
+                      >
+                        إلغاء
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>

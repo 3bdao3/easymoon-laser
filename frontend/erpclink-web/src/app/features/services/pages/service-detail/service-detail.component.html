@@ -1,0 +1,22 @@
+@if (loading()) {
+  <app-loading-spinner />
+} @else {
+  @if (service(); as svc) {
+  <app-page-header [title]="svc.name" [subtitle]="svc.serviceCode">
+    <a actions class="btn btn--ghost" routerLink="/app/services">رجوع</a>
+    <a actions class="btn btn--primary" [routerLink]="['edit']" *appHasPermission="permissions.ServicesUpdate">تعديل</a>
+  </app-page-header>
+  <section class="feature-page">
+    <div class="card form-stack">
+      <p><strong>الحالة:</strong> <app-status-badge [status]="statusLabel(svc)" /></p>
+      <p><strong>السعر الحالي:</strong> {{ svc.defaultPrice }} {{ svc.currencyCode }}</p>
+      @if (svc.durationMinutes) {
+        <p><strong>المدة:</strong> {{ svc.durationMinutes }} دقيقة</p>
+      }
+      @if (svc.description) {
+        <p><strong>الوصف:</strong> {{ svc.description }}</p>
+      }
+    </div>
+  </section>
+  }
+}

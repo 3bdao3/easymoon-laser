@@ -1,0 +1,42 @@
+@if (loading()) {
+  <app-loading-spinner />
+} @else {
+  @if (invoice(); as inv) {
+    <app-page-header [title]="inv.invoiceNumber || 'مسودة فاتورة'" subtitle="تفاصيل الفاتورة" />
+
+    <p>الحالة: {{ inv.status }} — الإجمالي: {{ inv.totalAmount }} — المتبقي: {{ inv.outstandingAmount }}</p>
+
+    <table class="data-table">
+      <thead>
+        <tr><th>الوصف</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr>
+      </thead>
+      <tbody>
+        @for (line of inv.lines; track line.id) {
+          <tr>
+            <td>{{ line.descriptionSnapshot }}</td>
+            <td>{{ line.quantity }}</td>
+            <td>{{ line.unitPrice }}</td>
+            <td>{{ line.lineTotal }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    @if (inv.status === 'Draft') {
+      <button *appHasPermission="permissions.FinanceInvoicesIssue" type="button" class="btn btn-primary" (click)="issue()">إصدار</button>
+      <button *appHasPermission="permissions.FinanceInvoicesVoid" type="button" class="btn btn-danger" (click)="voidInvoice()">إلغاء</button>
+    }
+
+    @if (inv.outstandingAmount > 0 && inv.status !== 'Draft' && inv.status !== 'Voided') {
+      <form *appHasPermission="permissions.FinancePaymentsCreate" [formGroup]="paymentForm" (ngSubmit)="pay()" class="payment-form">
+        <input type="number" formControlName="amount" step="0.01" />
+        <select formControlName="method">
+          <option value="Cash">Cash</option>
+          <option value="Card">Card</option>
+          <option value="BankTransfer">BankTransfer</option>
+        </select>
+        <button type="submit" class="btn btn-primary">تسجيل دفع</button>
+      </form>
+    }
+  }
+}

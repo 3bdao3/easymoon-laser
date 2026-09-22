@@ -1,0 +1,70 @@
+<app-page-header [title]="'الأطباء'" [subtitle]="'Doctors'">
+  <a actions class="btn btn--primary" routerLink="new" *appHasPermission="permissions.DoctorsCreate">طبيب جديد</a>
+</app-page-header>
+
+<div class="card">
+  <div class="toolbar">
+    <label class="form-field" style="margin: 0; min-width: 14rem">
+      <span class="form-field__label">بحث</span>
+      <input class="form-field__input" type="search" [formControl]="filters.controls.query" />
+    </label>
+    <label class="form-field" style="margin: 0">
+      <span class="form-field__label">الحالة</span>
+      <select class="form-field__select" [formControl]="filters.controls.isActive">
+        <option value="all">الكل</option>
+        <option value="true">نشط</option>
+        <option value="false">موقوف</option>
+      </select>
+    </label>
+  </div>
+
+  @if (loading()) {
+    <app-loading-spinner label="جاري التحميل…" />
+  } @else if (!(page()?.items?.length ?? 0)) {
+    <app-empty-state title="لا يوجد أطباء" />
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>الرقم</th>
+            <th>الاسم</th>
+            <th>التخصص</th>
+            <th>الهاتف</th>
+            <th>الحالة</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of page()!.items; track row.id) {
+            <tr>
+              <td>{{ row.doctorNumber }}</td>
+              <td><a [routerLink]="[row.id]">{{ row.displayName }}</a></td>
+              <td>{{ row.specialtyName || '—' }}</td>
+              <td>{{ row.phoneNumber || '—' }}</td>
+              <td><app-status-badge [status]="row.isActive ? 'نشط' : 'موقوف'" /></td>
+              <td>
+                <div class="row-actions">
+                  <a class="btn btn--ghost btn--sm" [routerLink]="[row.id]">عرض</a>
+                  <a class="btn btn--ghost btn--sm" [routerLink]="[row.id, 'edit']" *appHasPermission="permissions.DoctorsUpdate">تعديل</a>
+                  @if (row.isActive) {
+                    <button type="button" class="btn btn--danger btn--sm" *appHasPermission="permissions.DoctorsDeactivate" (click)="toggleActive(row)">إيقاف</button>
+                  } @else {
+                    <button type="button" class="btn btn--primary btn--sm" *appHasPermission="permissions.DoctorsActivate" (click)="toggleActive(row)">تفعيل</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span>{{ page()!.totalCount }} سجل — صفحة {{ page()!.page }} / {{ page()!.totalPages }}</span>
+      <div class="pagination__controls">
+        <button type="button" class="btn btn--ghost btn--sm" [disabled]="!page()!.hasPreviousPage" (click)="goPage(-1)">السابق</button>
+        <button type="button" class="btn btn--ghost btn--sm" [disabled]="!page()!.hasNextPage" (click)="goPage(1)">التالي</button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,135 @@
+.login-page {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background:
+    radial-gradient(circle at 18% 12%, rgb(229 138 167 / 18%), transparent 42%),
+    radial-gradient(circle at 88% 78%, rgb(214 111 145 / 10%), transparent 40%),
+    linear-gradient(165deg, #fff 0%, #f7f7f8 55%, #fbe7ee 100%);
+}
+
+.login-card {
+  width: min(100%, 26rem);
+  padding: var(--space-8);
+  border-radius: 1.125rem;
+  border: 1px solid var(--border);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.login-card__header {
+  border-block-end: 1px solid var(--border);
+  padding-block-end: var(--space-4);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.login-brand__mark {
+  display: block;
+  width: 4.5rem;
+  height: 4.5rem;
+  object-fit: contain;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.login-brand__name {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.login-brand__tag {
+  margin: 0.15rem 0 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.login-card__title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  color: var(--text-primary);
+}
+
+.login-card__subtitle {
+  margin: var(--space-2) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-block-start: var(--space-6);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field__label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.field__input {
+  width: 100%;
+  padding: 0.7rem var(--space-3);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.field__input:focus {
+  outline: 2px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  outline-offset: 1px;
+  border-color: var(--primary);
+}
+
+.field__error {
+  color: var(--danger);
+  font-size: var(--text-xs);
+}
+
+.btn--block {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 30rem) {
+  .login-page {
+    padding: var(--space-4) var(--space-3);
+    align-items: flex-start;
+    padding-block-start: var(--space-8);
+  }
+
+  .login-card {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .login-brand__mark {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .login-brand__name {
+    font-size: 1.2rem;
+  }
+
+  .login-card__title {
+    font-size: var(--text-xl, 1.25rem);
+  }
+}

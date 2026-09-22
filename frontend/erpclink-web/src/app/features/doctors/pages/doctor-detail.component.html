@@ -1,0 +1,83 @@
+@if (doctor(); as d) {
+  <app-page-header [title]="d.displayName" [subtitle]="d.doctorNumber">
+    <div actions class="row-actions">
+      <a class="btn btn--ghost" routerLink="..">رجوع</a>
+      <a class="btn btn--primary" routerLink="edit" *appHasPermission="permissions.DoctorsUpdate">تعديل</a>
+      @if (d.isActive) {
+        <button type="button" class="btn btn--danger" *appHasPermission="permissions.DoctorsDeactivate" (click)="toggleActive()">إيقاف</button>
+      } @else {
+        <button type="button" class="btn btn--primary" *appHasPermission="permissions.DoctorsActivate" (click)="toggleActive()">تفعيل</button>
+      }
+    </div>
+  </app-page-header>
+}
+
+@if (loading()) {
+  <app-loading-spinner />
+} @else if (doctor()) {
+  @let d = doctor()!;
+  <div class="card">
+    <div class="detail-grid">
+      <div><div class="detail-item__label">الحالة</div><app-status-badge [status]="d.isActive ? 'نشط' : 'موقوف'" /></div>
+      <div><div class="detail-item__label">التخصص</div><div class="detail-item__value">{{ d.specialtyName || '—' }}</div></div>
+      <div><div class="detail-item__label">الترخيص</div><div class="detail-item__value">{{ d.licenseNumber || '—' }}</div></div>
+      <div><div class="detail-item__label">الهاتف</div><div class="detail-item__value">{{ d.phoneNumber || '—' }}</div></div>
+      <div><div class="detail-item__label">البريد</div><div class="detail-item__value">{{ d.email || '—' }}</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="form-field__label">العيادات</h2>
+    <form *appHasPermission="permissions.DoctorsAssignClinic" [formGroup]="assignForm" (ngSubmit)="assignClinic()" class="form-grid">
+      <label class="form-field">
+        <span class="form-field__label">العيادة *</span>
+        <select class="form-field__select" formControlName="clinicId">
+          <option value="">اختر عيادة</option>
+          @for (c of clinics(); track c.id) {
+            <option [value]="c.id">{{ c.name }} ({{ c.code }})</option>
+          }
+        </select>
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">تاريخ البداية *</span>
+        <input class="form-field__input" type="date" formControlName="startDate" />
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">تاريخ النهاية</span>
+        <input class="form-field__input" type="date" formControlName="endDate" />
+      </label>
+      <div class="row-actions" style="align-items: flex-end">
+        <button class="btn btn--primary" type="submit" [disabled]="assigning()">ربط عيادة</button>
+      </div>
+    </form>
+
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>العيادة</th>
+            <th>من</th>
+            <th>إلى</th>
+            <th>الحالة</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of assignments(); track a.id) {
+            <tr>
+              <td>{{ a.clinicName }}</td>
+              <td>{{ a.startDate }}</td>
+              <td>{{ a.endDate || '—' }}</td>
+              <td><app-status-badge [status]="a.isActive ? 'نشط' : 'موقوف'" /></td>
+              <td>
+                @if (a.isActive) {
+                  <button type="button" class="btn btn--danger btn--sm" *appHasPermission="permissions.DoctorsAssignClinic" (click)="deactivateAssignment(a)">إيقاف</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}

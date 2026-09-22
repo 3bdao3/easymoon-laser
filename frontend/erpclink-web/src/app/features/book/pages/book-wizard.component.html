@@ -1,0 +1,165 @@
+<app-page-header [title]="'حجز جديد'" [subtitle]="'معالج الحجز — عميل ← مناطق ← وقت ← تأكيد'">
+  <a actions class="btn btn--ghost" routerLink="/app/appointments">رجوع</a>
+</app-page-header>
+
+<div class="card book-wizard">
+  <div class="wizard-steps">
+    <span [class]="stepClass(1)">1 العميل</span>
+    <span [class]="stepClass(2)">2 المناطق</span>
+    <span [class]="stepClass(3)">3 الوقت</span>
+    <span [class]="stepClass(4)">4 التأكيد</span>
+  </div>
+
+  @if (estimatedDuration() > 0) {
+    <div class="duration-summary" style="margin-bottom: var(--space-4)">
+      <span class="duration-summary__label">مدة الجلسة المتوقعة</span>
+      <span class="duration-summary__value">{{ estimatedDuration() }} دقيقة</span>
+    </div>
+  }
+
+  @switch (step()) {
+    @case (1) {
+      <h2 class="card__title">معلومات العميل</h2>
+      <label class="form-field">
+        <span class="form-field__label">بحث عن عميل</span>
+        <input class="form-field__input" type="search" [formControl]="customerQuery" placeholder="اسم أو هاتف…" />
+      </label>
+      @if (loadingCustomers()) {
+        <app-loading-spinner label="جاري البحث…" />
+      } @else {
+        <div class="table-wrap">
+          <table class="table table-cards">
+            <thead>
+              <tr>
+                <th></th>
+                <th>الاسم</th>
+                <th>الهاتف</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of customers(); track c.id) {
+                <tr>
+                  <td class="table-cards__hide-label" data-label="">
+                    <input
+                      type="radio"
+                      name="customer"
+                      [checked]="selectedCustomer()?.id === c.id"
+                      (change)="selectCustomer(c)"
+                    />
+                  </td>
+                  <td data-label="الاسم">{{ c.fullName }}</td>
+                  <td data-label="الهاتف">{{ c.phoneNumber }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="text-muted" style="margin-top: var(--space-3)">
+          لا تجد العميل؟
+          <a class="link" routerLink="/app/customers/new">+ إضافة عميلة جديدة</a>
+        </p>
+      }
+    }
+    @case (2) {
+      <h2 class="card__title">اختر المناطق المطلوبة</h2>
+      @if (loadingServices()) {
+        <app-loading-spinner label="جاري التحميل…" />
+      } @else {
+        <div class="service-grid">
+          @for (s of services(); track s.id) {
+            <label class="service-check" [class.service-check--selected]="isServiceSelected(s.id)">
+              <input type="checkbox" [checked]="isServiceSelected(s.id)" (change)="toggleService(s.id)" />
+              <span class="service-chip__icon" aria-hidden="true">◇</span>
+              <strong>{{ s.name }}</strong>
+              <span class="text-muted">{{ s.recommendedDurationMinutes }} دقيقة</span>
+            </label>
+          }
+        </div>
+      }
+    }
+    @case (3) {
+      <h2 class="card__title">اختر الموعد المناسب</h2>
+      <label class="form-field book-date-field">
+        <span class="form-field__label">تاريخ الموعد</span>
+        <input class="form-field__input" type="date" [formControl]="dateControl" />
+      </label>
+      <p class="text-muted">الخدمات المختارة: {{ selectedServiceNames() }}</p>
+      @if (loadingSlots()) {
+        <app-loading-spinner label="جاري جلب الأوقات المتاحة…" />
+      } @else if (!hasSlots()) {
+        <p class="text-muted">لا توجد أوقات متاحة في هذا اليوم. جرّب تاريخاً آخر.</p>
+      } @else {
+        <div class="slot-grid" style="margin-top: var(--space-4)">
+          @for (slot of availableSlots(); track slot.startTime) {
+            <button
+              type="button"
+              class="slot-btn"
+              [class.slot-btn--selected]="selectedSlot()?.startTime === slot.startTime"
+              (click)="selectSlot(slot)"
+            >
+              {{ formatTime(slot.startTime) }}
+            </button>
+          }
+        </div>
+      }
+    }
+    @case (4) {
+      <h2 class="card__title">تأكيد الحجز</h2>
+      <div class="detail-grid">
+        <div>
+          <div class="detail-item__label">العميل</div>
+          <div class="detail-item__value">{{ selectedCustomer()?.fullName }}</div>
+        </div>
+        <div>
+          <div class="detail-item__label">الهاتف</div>
+          <div class="detail-item__value">{{ selectedCustomer()?.phoneNumber }}</div>
+        </div>
+        <div>
+          <div class="detail-item__label">التاريخ</div>
+          <div class="detail-item__value">{{ dateControl.value }}</div>
+        </div>
+        <div>
+          <div class="detail-item__label">الوقت</div>
+          <div class="detail-item__value">
+            {{ formatTime(selectedSlot()?.startTime) }} – {{ formatTime(selectedSlot()?.endTime) }}
+          </div>
+        </div>
+        <div>
+          <div class="detail-item__label">المدة</div>
+          <div class="detail-item__value">{{ estimatedDuration() }} دقيقة</div>
+        </div>
+        <div>
+          <div class="detail-item__label">المناطق</div>
+          <div class="detail-item__value">
+            <div class="area-pill-list">
+              @for (name of selectedServiceNames().split('، '); track name) {
+                @if (name.trim()) {
+                  <span class="area-pill">{{ name.trim() }}</span>
+                }
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+      <label class="form-field" style="margin-top: var(--space-4)">
+        <span class="form-field__label">ملاحظات</span>
+        <textarea class="form-field__textarea" [formControl]="notes" rows="2"></textarea>
+      </label>
+    }
+  }
+
+  <div class="row-actions book-nav">
+    @if (step() > 1) {
+      <button type="button" class="btn btn--ghost" (click)="goBack()">السابق</button>
+    }
+    @if (step() < 4) {
+      <button type="button" class="btn btn--primary" (click)="goNext()" [disabled]="!canGoNext()">
+        التالي
+      </button>
+    } @else {
+      <button type="button" class="btn btn--primary" (click)="submit()" [disabled]="submitting()">
+        {{ submitting() ? 'جاري الحفظ…' : 'تأكيد الحجز' }}
+      </button>
+    }
+  </div>
+</div>

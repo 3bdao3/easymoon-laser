@@ -1,0 +1,59 @@
+<app-page-header [title]="'المناطق والمدة'" [subtitle]="'خدمات الليزر ومدد الجلسات'">
+  <a
+    actions
+    class="btn btn--primary"
+    routerLink="new"
+    *appHasPermission="permissions.LaserServicesManage"
+  >
+    + منطقة جديدة
+  </a>
+</app-page-header>
+
+<div class="card">
+  @if (loading()) {
+    <app-loading-spinner label="جاري التحميل…" />
+  } @else if (items().length === 0) {
+    <app-empty-state title="لا توجد خدمات" message="أضف خدمة ليزر وحدد مدة الجلسة." />
+  } @else {
+    <div class="table-wrap">
+      <table class="table table-cards">
+        <thead>
+          <tr>
+            <th>الترتيب</th>
+            <th>الاسم</th>
+            <th>الحد الأدنى</th>
+            <th>الحد الأقصى</th>
+            <th>المدة الموصى بها</th>
+            <th>الحالة</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of items(); track row.id) {
+            <tr>
+              <td data-label="الترتيب">{{ row.displayOrder }}</td>
+              <td data-label="الاسم">{{ row.name }}</td>
+              <td data-label="الحد الأدنى">{{ row.minDurationMinutes }} د</td>
+              <td data-label="الحد الأقصى">{{ row.maxDurationMinutes }} د</td>
+              <td data-label="المدة الموصى بها">{{ row.recommendedDurationMinutes }} د</td>
+              <td data-label="الحالة">
+                <span class="badge" [class]="row.isActive ? 'badge--attended' : 'badge--muted'">
+                  {{ row.isActive ? 'نشطة' : 'موقوفة' }}
+                </span>
+              </td>
+              <td class="table-cards__actions" data-label="">
+                <a
+                  class="btn btn--ghost btn--sm"
+                  [routerLink]="[row.id, 'edit']"
+                  *appHasPermission="permissions.LaserServicesManage"
+                >
+                  تعديل المدد
+                </a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

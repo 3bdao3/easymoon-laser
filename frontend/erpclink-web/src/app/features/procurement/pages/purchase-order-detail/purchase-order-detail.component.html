@@ -1,0 +1,70 @@
+@if (loading()) {
+  <app-loading-spinner />
+} @else {
+  @if (po(); as p) {
+    <app-page-header [title]="p.purchaseOrderNumber" [subtitle]="p.status">
+      @if (canSubmit()) {
+        <button
+          actions
+          type="button"
+          class="btn btn--primary"
+          *appHasPermission="permissions.ProcurementPurchaseOrdersSubmit"
+          (click)="submit()">
+          إرسال
+        </button>
+      }
+      @if (canApprove()) {
+        <button
+          actions
+          type="button"
+          class="btn btn--primary"
+          *appHasPermission="permissions.ProcurementPurchaseOrdersApprove"
+          (click)="approve()">
+          اعتماد
+        </button>
+      }
+      @if (canCancel()) {
+        <button
+          actions
+          type="button"
+          class="btn btn--secondary"
+          *appHasPermission="permissions.ProcurementPurchaseOrdersCancel"
+          (click)="cancel()">
+          إلغاء
+        </button>
+      }
+    </app-page-header>
+
+    <section class="feature-page">
+      <div class="card totals">
+        <div>المجموع الفرعي: {{ p.subTotal | number: '1.2-2' }}</div>
+        <div>الخصم: {{ p.discountAmount | number: '1.2-2' }}</div>
+        <div>الضريبة: {{ p.taxAmount | number: '1.2-2' }}</div>
+        <div><strong>الإجمالي: {{ p.totalAmount | number: '1.2-2' }} {{ p.currencyCode }}</strong></div>
+      </div>
+
+      <div class="card data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الوصف</th>
+              <th>الكمية</th>
+              <th>تكلفة الوحدة</th>
+              <th>إجمالي البند</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of p.lines; track line.id) {
+              <tr>
+                <td>{{ line.descriptionSnapshot }}</td>
+                <td>{{ line.quantity | number: '1.2-2' }}</td>
+                <td>{{ line.unitCost | number: '1.2-2' }}</td>
+                <td>{{ line.lineTotal | number: '1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+}

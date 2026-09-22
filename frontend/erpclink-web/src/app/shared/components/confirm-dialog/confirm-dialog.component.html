@@ -1,0 +1,28 @@
+@if (confirmService.state(); as dialog) {
+  <div class="confirm-backdrop" (click)="onBackdropClick()" role="presentation">
+    <div
+      class="confirm-panel"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="'confirm-title'"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="confirm-title" class="confirm-panel__title">{{ dialog.title }}</h2>
+      <p class="confirm-panel__message">{{ dialog.message }}</p>
+      <div class="confirm-panel__actions">
+        <button type="button" class="btn btn--ghost" (click)="onCancel()">
+          {{ dialog.cancelLabel }}
+        </button>
+        <button
+          type="button"
+          class="btn"
+          [class.btn--primary]="dialog.variant === 'default'"
+          [class.btn--danger]="dialog.variant === 'danger'"
+          (click)="onConfirm()"
+        >
+          {{ dialog.confirmLabel }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

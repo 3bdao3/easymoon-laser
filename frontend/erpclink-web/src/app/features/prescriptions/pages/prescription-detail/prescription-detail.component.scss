@@ -1,0 +1,19 @@
+code {
+  font-size: var(--text-xs);
+}
+
+.table-link {
+  margin-inline-start: var(--space-2);
+}
+
+.btn--sm {
+  padding-inline: var(--space-2);
+  padding-block: var(--space-1);
+  font-size: var(--text-xs);
+  margin-inline-end: var(--space-1);
+}
+
+.selected-med {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

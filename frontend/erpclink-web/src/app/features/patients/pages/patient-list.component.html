@@ -1,0 +1,110 @@
+<app-page-header [title]="'المرضى'" [subtitle]="'Patients'">
+  <a actions class="btn btn--primary" routerLink="new" *appHasPermission="permissions.PatientsCreate">
+    مريض جديد
+  </a>
+</app-page-header>
+
+<div class="card">
+  <div class="toolbar">
+    <label class="form-field" style="margin: 0; min-width: 14rem">
+      <span class="form-field__label">بحث</span>
+      <input class="form-field__input" type="search" [formControl]="filters.controls.query" placeholder="اسم، هاتف، رقم ملف، رقم قومي…" />
+    </label>
+    <label class="form-field" style="margin: 0">
+      <span class="form-field__label">حالة الملف (إداري)</span>
+      <select class="form-field__select" [formControl]="filters.controls.isActive">
+        <option value="all">الكل</option>
+        <option value="true">نشط</option>
+        <option value="false">موقوف</option>
+      </select>
+    </label>
+  </div>
+
+  @if (loading()) {
+    <app-loading-spinner label="جاري التحميل…" />
+  } @else if (!(page()?.items?.length ?? 0)) {
+    <app-empty-state
+      title="لا يوجد مريض مطابق"
+      message="جرّب البحث برقم الملف أو الهاتف أو الرقم القومي. إن لم يوجد سجل، سجّل مريضاً جديداً — ولا تنشئ ملفاً مكرراً إذا ظهر تحذير تشابه."
+    >
+    </app-empty-state>
+    <div class="row-actions" style="margin-top: var(--space-3)">
+      <a class="btn btn--primary" routerLink="new" *appHasPermission="permissions.PatientsCreate">تسجيل مريض جديد</a>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>رقم الملف</th>
+            <th>الاسم</th>
+            <th>تاريخ الميلاد</th>
+            <th>الهاتف</th>
+            <th>حالة الملف</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of page()!.items; track row.id) {
+            <tr>
+              <td>{{ row.patientNumber }}</td>
+              <td>
+                <a [routerLink]="[row.id]">{{ row.fullName }}</a>
+              </td>
+              <td>{{ row.dateOfBirth }}</td>
+              <td>{{ row.phoneNumber }}</td>
+              <td>
+                <app-status-badge [status]="row.isActive ? 'نشط' : 'موقوف'" />
+              </td>
+              <td>
+                <div class="row-actions">
+                  <a class="btn btn--ghost btn--sm" [routerLink]="[row.id]">عرض</a>
+                  <a
+                    class="btn btn--ghost btn--sm"
+                    [routerLink]="[row.id, 'edit']"
+                    *appHasPermission="permissions.PatientsUpdate"
+                  >
+                    تعديل
+                  </a>
+                  @if (row.isActive) {
+                    <button
+                      type="button"
+                      class="btn btn--danger btn--sm"
+                      *appHasPermission="permissions.PatientsDeactivate"
+                      (click)="toggleActive(row)"
+                    >
+                      إيقاف
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn btn--primary btn--sm"
+                      *appHasPermission="permissions.PatientsActivate"
+                      (click)="toggleActive(row)"
+                    >
+                      تفعيل
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <span>
+        {{ page()!.totalCount }} سجل — صفحة {{ page()!.page }} / {{ page()!.totalPages }}
+      </span>
+      <div class="pagination__controls">
+        <button type="button" class="btn btn--ghost btn--sm" [disabled]="!page()!.hasPreviousPage" (click)="goPage(-1)">
+          السابق
+        </button>
+        <button type="button" class="btn btn--ghost btn--sm" [disabled]="!page()!.hasNextPage" (click)="goPage(1)">
+          التالي
+        </button>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,31 @@
+<app-page-header title="مورد جديد" subtitle="إنشاء مورد على مستوى المؤسسة" />
+
+<section class="feature-page">
+  <form class="card form-stack" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field">
+      <label class="field__label" for="name">الاسم *</label>
+      <input id="name" class="field__input" formControlName="name" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="contactName">جهة الاتصال</label>
+      <input id="contactName" class="field__input" formControlName="contactName" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="phone">الهاتف</label>
+      <input id="phone" class="field__input" formControlName="phone" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="email">البريد</label>
+      <input id="email" class="field__input" formControlName="email" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="address">العنوان</label>
+      <textarea id="address" class="field__input" formControlName="address" rows="2"></textarea>
+    </div>
+    <div class="field">
+      <label class="field__label" for="notes">ملاحظات</label>
+      <textarea id="notes" class="field__input" formControlName="notes" rows="2"></textarea>
+    </div>
+    <button type="submit" class="btn btn--primary" [disabled]="form.invalid">حفظ</button>
+  </form>
+</section>

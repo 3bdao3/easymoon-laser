@@ -1,0 +1,24 @@
+.book-date-field {
+  max-width: 16rem;
+}
+
+.book-nav {
+  margin-top: var(--space-6);
+}
+
+@media (max-width: 48rem) {
+  .book-date-field {
+    max-width: none;
+    width: 100%;
+  }
+
+  .book-nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .book-nav .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

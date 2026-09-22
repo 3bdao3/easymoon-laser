@@ -1,0 +1,47 @@
+.date-field {
+  margin: 0;
+  min-width: 12rem;
+}
+
+.calendar-legend {
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.calendar-block__body {
+  min-width: 0;
+}
+
+.calendar-block__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.calendar-block__meta {
+  margin: var(--space-1) 0 0;
+  word-break: break-word;
+}
+
+@media (max-width: 48rem) {
+  .date-field {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .calendar-legend {
+    width: 100%;
+    margin-inline-start: 0;
+    flex-wrap: wrap;
+  }
+
+  .calendar-block {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .calendar-block__time {
+    font-size: var(--text-base);
+  }
+}

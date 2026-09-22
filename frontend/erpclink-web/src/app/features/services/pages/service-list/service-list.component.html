@@ -1,0 +1,76 @@
+<app-page-header title="الخدمات الطبية" subtitle="كتalog الخدمات القابلة للفوترة">
+  <a actions class="btn btn--primary" routerLink="new" *appHasPermission="permissions.ServicesCreate">
+    خدمة جديدة
+  </a>
+</app-page-header>
+
+<section class="feature-page">
+  <form class="card filters" [formGroup]="filters" (ngSubmit)="search()">
+    <div class="field">
+      <label class="field__label" for="query">بحث</label>
+      <input id="query" class="field__input" formControlName="query" placeholder="اسم، رمز…" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="serviceCode">رمز الخدمة</label>
+      <input id="serviceCode" class="field__input" formControlName="serviceCode" />
+    </div>
+    <div class="field">
+      <label class="field__label">
+        <input type="checkbox" formControlName="isActive" />
+        النشطة فقط
+      </label>
+    </div>
+    <div class="filters__actions">
+      <button type="submit" class="btn btn--primary">بحث</button>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <app-loading-spinner />
+  } @else if (result()) {
+    @let page = result()!;
+    @if (page.items.length === 0) {
+      <app-empty-state title="لا توجد خدمات" />
+    } @else {
+      <div class="card data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الرمز</th>
+              <th>الاسم</th>
+              <th>السعر</th>
+              <th>الحالة</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of page.items; track trackById($index, row)) {
+              <tr>
+                <td>{{ row.serviceCode }}</td>
+                <td>{{ row.name }}</td>
+                <td>{{ row.defaultPrice }} {{ row.currencyCode }}</td>
+                <td><app-status-badge [status]="statusLabel(row)" /></td>
+                <td>
+                  <a class="table-link" [routerLink]="[row.id]">تفاصيل</a>
+                  <a class="table-link" [routerLink]="[row.id, 'edit']" *appHasPermission="permissions.ServicesUpdate">تعديل</a>
+                  @if (row.isActive) {
+                    <button type="button" class="btn btn--ghost btn--sm" *appHasPermission="permissions.ServicesDeactivate" (click)="toggleActive(row)">إيقاف</button>
+                  } @else {
+                    <button type="button" class="btn btn--ghost btn--sm" *appHasPermission="permissions.ServicesActivate" (click)="toggleActive(row)">تفعيل</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <span>{{ page.totalCount }} خدمة</span>
+        <div class="filters__actions">
+          <button type="button" class="btn btn--ghost" [disabled]="page.page <= 1" (click)="goToPage(page.page - 1)">السابق</button>
+          <button type="button" class="btn btn--ghost" [disabled]="page.page >= totalPages()" (click)="goToPage(page.page + 1)">التالي</button>
+        </div>
+      </div>
+    }
+  }
+</section>

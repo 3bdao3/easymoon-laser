@@ -1,0 +1,148 @@
+<section class="dash">
+  <header class="dash__hello">
+    <div class="dash__hello-text">
+      <h1 class="dash__title">{{ greeting() }}، {{ firstName() }} 👋</h1>
+      <p class="dash__subtitle">مرحبًا بك في نظام عيادة الليزر</p>
+    </div>
+    <div class="dash__actions">
+      <label class="form-field dash__date">
+        <span class="form-field__label">تاريخ العرض</span>
+        <input class="form-field__input" type="date" [formControl]="date" />
+      </label>
+      <a
+        class="btn btn--primary dash__book"
+        routerLink="/app/book"
+        *appHasPermission="permissions.LaserAppointmentsCreate"
+      >
+        حجز جديد
+      </a>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <app-loading-spinner label="جاري تحميل لوحة التحكم…" />
+  } @else {
+    @if (data(); as d) {
+      <div class="stat-grid">
+        <article class="stat-card">
+          <div class="stat-card__icon" aria-hidden="true">👥</div>
+          <span class="stat-card__label">إجمالي العملاء</span>
+          <span class="stat-card__value">{{ customerCount() }}</span>
+        </article>
+        <article class="stat-card">
+          <div class="stat-card__icon" aria-hidden="true">📅</div>
+          <span class="stat-card__label">مواعيد اليوم</span>
+          <span class="stat-card__value">{{ d.totalAppointments }}</span>
+        </article>
+        <article class="stat-card">
+          <div class="stat-card__icon" aria-hidden="true">⏱</div>
+          <span class="stat-card__label">مواعيد قادمة</span>
+          <span class="stat-card__value">{{ d.remainingCount }}</span>
+        </article>
+      </div>
+
+      <div class="stat-grid pulse-stats">
+        <article class="stat-card stat-card--pulse">
+          <span class="stat-card__label">نبضات اليوم</span>
+          <span class="stat-card__value">{{ (d.pulsesToday ?? 0) | number }}</span>
+        </article>
+        <article class="stat-card stat-card--pulse">
+          <span class="stat-card__label">نبضات هذا الشهر</span>
+          <span class="stat-card__value">{{ (d.pulsesThisMonth ?? 0) | number }}</span>
+        </article>
+        <article class="stat-card stat-card--pulse">
+          <span class="stat-card__label">إجمالي نبضات العيادة</span>
+          <span class="stat-card__value">{{ (d.pulsesAllTime ?? 0) | number }}</span>
+        </article>
+      </div>
+
+      <section class="card dash__today">
+        <div class="dash__today-head">
+          <h2 class="card__title" style="margin: 0">مواعيد اليوم</h2>
+          <a class="link" routerLink="/app/calendar">عرض التقويم</a>
+        </div>
+
+        @if (d.todaysAppointments.length === 0) {
+          <p class="text-muted">لا مواعيد مسجّلة لهذا اليوم.</p>
+        } @else {
+          <div class="table-wrap">
+            <table class="table table-cards">
+              <thead>
+                <tr>
+                  <th>من</th>
+                  <th>إلى</th>
+                  <th>العميلة</th>
+                  <th>رقم الهاتف</th>
+                  <th>الخدمة</th>
+                  <th>المدة</th>
+                  <th>الحالة</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of d.todaysAppointments; track row.id) {
+                  <tr>
+                    <td data-label="من">
+                      <span class="badge badge--time">{{ formatTimeAr(row.startTime) }}</span>
+                    </td>
+                    <td data-label="إلى">
+                      <span class="badge badge--time">{{ formatTimeAr(row.endTime) }}</span>
+                    </td>
+                    <td data-label="العميلة">
+                      <a class="link" [routerLink]="['/app/customers', row.customerId]">{{ row.customerName }}</a>
+                    </td>
+                    <td data-label="رقم الهاتف">{{ row.customerPhone }}</td>
+                    <td data-label="الخدمة">{{ serviceNames(row) }}</td>
+                    <td data-label="المدة">{{ row.durationMinutes }} دقيقة</td>
+                    <td data-label="الحالة">
+                      <span class="badge" [class]="badgeClass(row.status)">{{ statusLabel(row.status) }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <section class="card dash__customers" *appHasPermission="permissions.LaserCustomersView">
+        <div class="dash__today-head">
+          <h2 class="card__title" style="margin: 0">العملاء حسب آخر حجز</h2>
+          <a class="link" routerLink="/app/customers">عرض الكل</a>
+        </div>
+
+        @if (recentCustomers().length === 0) {
+          <p class="text-muted">لا توجد عميلات بعد.</p>
+        } @else {
+          <div class="table-wrap">
+            <table class="table table-cards">
+              <thead>
+                <tr>
+                  <th>العميلة</th>
+                  <th>الهاتف</th>
+                  <th>آخر حجز</th>
+                  <th>حالة آخر حجز</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of recentCustomers(); track row.id) {
+                  <tr>
+                    <td data-label="العميلة">
+                      <a class="link" [routerLink]="['/app/customers', row.id]">{{ row.fullName }}</a>
+                    </td>
+                    <td data-label="الهاتف">{{ row.phoneNumber }}</td>
+                    <td data-label="آخر حجز">{{ lastBookingLabel(row) }}</td>
+                    <td data-label="حالة آخر حجز">
+                      <span class="badge" [class]="lastBadgeClass(row)">{{ lastStatusLabel(row) }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    } @else {
+      <p class="text-muted">تعذّر تحميل بيانات اللوحة. تحقق من الصلاحيات أو اتصال الخادم.</p>
+    }
+  }
+</section>

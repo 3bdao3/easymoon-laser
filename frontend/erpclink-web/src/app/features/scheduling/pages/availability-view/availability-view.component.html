@@ -1,0 +1,76 @@
+<div class="page">
+  <app-page-header title="توفر الطبيب" subtitle="Availability (read-only)" />
+
+  <div class="card">
+    <div class="field-row">
+      <label class="field">
+        <span class="field__label">الطبيب</span>
+        <input
+          class="field__input"
+          type="search"
+          [ngModel]="doctorQuery()"
+          (ngModelChange)="doctorQuery.set($event)"
+          (keyup.enter)="searchDoctors()"
+        />
+      </label>
+      <label class="field">
+        <span class="field__label">التاريخ</span>
+        <input class="field__input" type="date" [ngModel]="date()" (ngModelChange)="date.set($event)" />
+      </label>
+      <label class="field">
+        <span class="field__label">العيادة (اختياري)</span>
+        <select class="field__select" [ngModel]="clinicId()" (ngModelChange)="clinicId.set($event)">
+          <option value="">— الكل —</option>
+          @for (c of clinicOptions(); track c.id) {
+            <option [value]="c.id">{{ c.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    <div class="page__toolbar">
+      <a class="btn btn--ghost" routerLink="/app/scheduling">رجوع</a>
+      <button class="btn btn--primary" type="button" (click)="loadAvailability()" [disabled]="loading()">
+        @if (loading()) {
+          <app-loading-spinner size="sm" label="" />
+        } @else {
+          عرض المواعيد المتاحة
+        }
+      </button>
+    </div>
+
+    @if (doctorResults().length) {
+      <ul class="doctor-pick-list">
+        @for (d of doctorResults(); track d.id) {
+          <li>
+            <button type="button" class="doctor-pick" (click)="pickDoctor(d)">{{ d.displayName }}</button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  @if (availability(); as avail) {
+    <div class="card">
+      <p class="text-muted">
+        {{ formatDateOnly(avail.date) }}
+        @if (avail.isHoliday) {
+          — عطلة: {{ avail.holidayName || '—' }}
+        }
+        @if (avail.isDoctorUnavailable) {
+          — الطبيب غير متاح
+        }
+      </p>
+      @if (avail.slots.length === 0) {
+        <app-empty-state title="لا توجد فترات" message="لا توجد مواعيد متاحة في هذا اليوم." />
+      } @else {
+        <div class="slot-grid">
+          @for (slot of avail.slots; track slot.start) {
+            <div class="slot-readonly">
+              {{ formatTimeOnly(slot.start) }} – {{ formatTimeOnly(slot.end) }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,52 @@
+<app-page-header [title]="'التقويم'" [subtitle]="'عرض يومي للمواعيد'">
+  <div actions class="view-toggle">
+    <button type="button" class="view-toggle__btn view-toggle__btn--active">يوم</button>
+    <button type="button" class="view-toggle__btn" disabled title="قريباً">أسبوع</button>
+    <button type="button" class="view-toggle__btn" disabled title="قريباً">شهر</button>
+  </div>
+  <a actions class="btn btn--primary" routerLink="/app/book">حجز جديد</a>
+</app-page-header>
+
+<div class="card calendar-card">
+  <div class="toolbar calendar-toolbar">
+    <label class="form-field date-field">
+      <span class="form-field__label">اليوم</span>
+      <input class="form-field__input" type="date" [formControl]="date" />
+    </label>
+    <div class="toolbar__actions calendar-legend">
+      <span class="badge badge--pending">قيد الانتظار</span>
+      <span class="badge badge--confirmed">مؤكد</span>
+      <span class="badge badge--attended">حضر</span>
+      <span class="badge badge--cancelled">ملغي</span>
+      <span class="badge badge--noshow">لم يحضر</span>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <app-loading-spinner label="جاري التحميل…" />
+  } @else if (items().length === 0) {
+    <app-empty-state title="لا مواعيد لهذا اليوم" message="اختر يوماً آخر أو أنشئ حجزاً." />
+  } @else {
+    <div class="calendar-day">
+      @for (row of items(); track row.id) {
+        <article class="calendar-block" [class]="blockClass(row.status)">
+          <div class="calendar-block__time">{{ formatTime(row.startTime) }}</div>
+          <div class="calendar-block__body">
+            <div class="calendar-block__head">
+              <strong>
+                <a class="link" [routerLink]="['/app/appointments', row.id]">{{ row.customerName }}</a>
+              </strong>
+              <span class="badge" [class]="badgeClass(row.status)">{{ statusLabel(row.status) }}</span>
+            </div>
+            <p class="text-muted calendar-block__meta">
+              {{ serviceNames(row) }} · {{ row.durationMinutes }} دقيقة
+            </p>
+            @if (row.notes) {
+              <p class="text-muted calendar-block__meta">{{ row.notes }}</p>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</div>

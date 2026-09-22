@@ -1,0 +1,100 @@
+<app-page-header title="الوصفات الطبية" subtitle="بحث وعرض الوصفات">
+  <a actions class="btn btn--primary" routerLink="new" *appHasPermission="permissions.PrescriptionsCreate">
+    وصفة جديدة
+  </a>
+</app-page-header>
+
+<section class="feature-page">
+  <form class="card filters" [formGroup]="filters" (ngSubmit)="search()">
+    <div class="field">
+      <label class="field__label" for="prescriptionNumber">رقم الوصفة</label>
+      <input id="prescriptionNumber" class="field__input" formControlName="prescriptionNumber" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="patientId">معرف المريض</label>
+      <input id="patientId" class="field__input" formControlName="patientId" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="medicalVisitId">معرف الزيارة</label>
+      <input id="medicalVisitId" class="field__input" formControlName="medicalVisitId" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="status">الحالة</label>
+      <select id="status" class="field__select" formControlName="status">
+        <option value="">الكل</option>
+        @for (s of statusOptions; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label class="field__label" for="dateFrom">من</label>
+      <input id="dateFrom" type="date" class="field__input" formControlName="dateFrom" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="dateTo">إلى</label>
+      <input id="dateTo" type="date" class="field__input" formControlName="dateTo" />
+    </div>
+    <div class="filters__actions">
+      <button type="submit" class="btn btn--primary">بحث</button>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <app-loading-spinner />
+  } @else if (result()) {
+    @let page = result()!;
+    @if (page.items.length === 0) {
+      <app-empty-state title="لا توجد وصفات" />
+    } @else {
+      <div class="card data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الرقم</th>
+              <th>التاريخ</th>
+              <th>الحالة</th>
+              <th>البنود</th>
+              <th>المريض</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of page.items; track trackById($index, row)) {
+              <tr>
+                <td>{{ row.prescriptionNumber }}</td>
+                <td>{{ formatDate(row.prescriptionDate) }}</td>
+                <td><app-status-badge [status]="row.status" /></td>
+                <td>{{ row.itemCount }}</td>
+                <td><code>{{ row.patientId }}</code></td>
+                <td>
+                  <a class="table-link" [routerLink]="[row.id]">عرض</a>
+                  ·
+                  <a class="table-link" [routerLink]="['/app/prescriptions/patients', row.patientId, 'history']">
+                    تاريخ المريض
+                  </a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <span>{{ page.totalCount }} وصفة</span>
+        <div class="filters__actions">
+          <button type="button" class="btn btn--ghost" [disabled]="page.page <= 1" (click)="goToPage(page.page - 1)">
+            السابق
+          </button>
+          <button
+            type="button"
+            class="btn btn--ghost"
+            [disabled]="page.page >= totalPages()"
+            (click)="goToPage(page.page + 1)"
+          >
+            التالي
+          </button>
+        </div>
+      </div>
+    }
+  }
+</section>

@@ -1,0 +1,9 @@
+<div class="shell">
+  <app-sidebar [open]="sidebarOpen()" (closeRequested)="closeSidebar()" />
+  <div class="shell__main">
+    <app-topbar [sidebarOpen]="sidebarOpen()" (menuToggle)="toggleSidebar()" />
+    <main class="shell__content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

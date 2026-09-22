@@ -1,0 +1,116 @@
+@if (loading()) {
+  <app-loading-spinner />
+} @else if (visit()) {
+  @let v = visit()!;
+  <app-page-header [title]="'زيارة ' + v.visitNumber" [subtitle]="formatDate(v.visitDate)">
+    <div actions class="action-bar">
+      <a class="btn btn--ghost" routerLink="/app/medical-visits">القائمة</a>
+      <a
+        class="btn btn--primary"
+        *appHasPermission="permissions.PrescriptionsCreate"
+        [routerLink]="prescriptionCreateLink()"
+        [queryParams]="prescriptionQueryParams()"
+      >
+        إنشاء وصفة
+      </a>
+    </div>
+  </app-page-header>
+
+  <section class="feature-page">
+    <div class="card">
+      <dl class="meta-grid">
+        <div>
+          <dt>الحالة</dt>
+          <dd><app-status-badge [status]="v.status" /></dd>
+        </div>
+        <div>
+          <dt>المريض</dt>
+          <dd>
+            <code>{{ v.patientId }}</code>
+            <a class="table-link" [routerLink]="['/app/medical-visits/patients', v.patientId, 'history']">
+              تاريخ الزيارات
+            </a>
+          </dd>
+        </div>
+        <div>
+          <dt>الموعد</dt>
+          <dd><code>{{ v.appointmentId }}</code></dd>
+        </div>
+        <div>
+          <dt>الطبيب / العيادة</dt>
+          <dd><code>{{ v.doctorId }}</code> · <code>{{ v.clinicId }}</code></dd>
+        </div>
+        @if (v.completedAtUtc) {
+          <div>
+            <dt>اكتملت</dt>
+            <dd>{{ formatDateTime(v.completedAtUtc) }}</dd>
+          </div>
+        }
+        @if (v.cancelledAtUtc) {
+          <div>
+            <dt>أُلغيت</dt>
+            <dd>{{ formatDateTime(v.cancelledAtUtc) }}</dd>
+          </div>
+        }
+      </dl>
+    </div>
+
+    @if (!notesEditable()) {
+      <p class="alert">الملاحظات السريرية للقراءة فقط — الزيارة مكتملة أو ملغاة.</p>
+    }
+
+    <form class="card form-grid" [formGroup]="notesForm" (ngSubmit)="saveNotes()">
+      <h2 class="card__title">الملاحظات السريرية</h2>
+      <div class="field">
+        <label class="field__label" for="chiefComplaint">الشكوى الرئيسية</label>
+        <textarea id="chiefComplaint" class="field__textarea" formControlName="chiefComplaint"></textarea>
+      </div>
+      <div class="field">
+        <label class="field__label" for="clinicalNotes">ملاحظات سريرية</label>
+        <textarea id="clinicalNotes" class="field__textarea" formControlName="clinicalNotes"></textarea>
+      </div>
+      <div class="field">
+        <label class="field__label" for="examinationFindings">نتائج الفحص</label>
+        <textarea id="examinationFindings" class="field__textarea" formControlName="examinationFindings"></textarea>
+      </div>
+      <div class="field">
+        <label class="field__label" for="diagnosisNotes">التشخيص</label>
+        <textarea id="diagnosisNotes" class="field__textarea" formControlName="diagnosisNotes"></textarea>
+      </div>
+      <div class="field">
+        <label class="field__label" for="followUpNotes">المتابعة</label>
+        <textarea id="followUpNotes" class="field__textarea" formControlName="followUpNotes"></textarea>
+      </div>
+      @if (notesEditable()) {
+        <div class="action-bar" *appHasPermission="permissions.MedicalVisitsUpdate">
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">
+            {{ saving() ? 'جاري الحفظ…' : 'حفظ الملاحظات' }}
+          </button>
+        </div>
+      }
+    </form>
+
+    @if (notesEditable()) {
+      <div class="action-bar">
+        <button
+          type="button"
+          class="btn btn--primary"
+          *appHasPermission="permissions.MedicalVisitsComplete"
+          (click)="completeVisit()"
+        >
+          إكمال الزيارة
+        </button>
+        <button
+          type="button"
+          class="btn btn--danger"
+          *appHasPermission="permissions.MedicalVisitsCancel"
+          (click)="cancelVisit()"
+        >
+          إلغاء الزيارة
+        </button>
+      </div>
+    }
+  </section>
+} @else {
+  <app-page-header title="زيارة غير موجودة" />
+}

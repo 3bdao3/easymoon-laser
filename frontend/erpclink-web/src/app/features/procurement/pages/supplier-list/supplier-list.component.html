@@ -1,0 +1,57 @@
+<app-page-header title="الموردون" subtitle="بحث وإدارة موردي المؤسسة">
+  <a actions class="btn btn--primary" routerLink="new" *appHasPermission="permissions.ProcurementSuppliersCreate">
+    مورد جديد
+  </a>
+</app-page-header>
+
+<section class="feature-page">
+  <form class="card filters" [formGroup]="filters" (ngSubmit)="search()">
+    <div class="field">
+      <label class="field__label" for="search">بحث</label>
+      <input id="search" class="field__input" formControlName="search" placeholder="الاسم أو الرمز" />
+    </div>
+    <div class="field">
+      <label class="field__label">
+        <input type="checkbox" formControlName="activeOnly" />
+        النشطون فقط
+      </label>
+    </div>
+    <div class="filters__actions">
+      <button type="submit" class="btn btn--primary">بحث</button>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <app-loading-spinner />
+  } @else if (result()) {
+    @let page = result()!;
+    @if (page.items.length === 0) {
+      <app-empty-state title="لا يوجد موردون" />
+    } @else {
+      <div class="card data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الرمز</th>
+              <th>الاسم</th>
+              <th>الهاتف</th>
+              <th>الحالة</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of page.items; track trackById($index, row)) {
+              <tr>
+                <td>{{ row.supplierCode }}</td>
+                <td>{{ row.name }}</td>
+                <td>{{ row.phone || '—' }}</td>
+                <td>{{ row.isActive ? 'نشط' : 'غير نشط' }}</td>
+                <td><a [routerLink]="[row.id]">عرض</a></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

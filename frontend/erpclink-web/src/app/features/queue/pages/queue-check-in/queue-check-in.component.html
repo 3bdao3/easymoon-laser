@@ -1,0 +1,33 @@
+<div class="page">
+  <app-page-header title="تسجيل حضور" subtitle="Queue check-in" />
+
+  <form class="card" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="field">
+      <span class="field__label">معرّف الموعد</span>
+      <input class="field__input" formControlName="appointmentId" placeholder="UUID" />
+      @if (form.controls.appointmentId.touched && form.controls.appointmentId.invalid) {
+        <span class="field__error">معرّف الموعد مطلوب</span>
+      }
+    </label>
+
+    <label class="field">
+      <span class="field__label">الأولوية (اختياري)</span>
+      <select class="field__select" formControlName="priority">
+        @for (p of priorityOptions; track p.value) {
+          <option [value]="p.value">{{ p.label }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="page__toolbar">
+      <a class="btn btn--ghost" routerLink="/app/queue">إلغاء</a>
+      <button class="btn btn--primary" type="submit" [disabled]="submitting()">
+        @if (submitting()) {
+          <app-loading-spinner size="sm" label="" />
+        } @else {
+          تسجيل
+        }
+      </button>
+    </div>
+  </form>
+</div>

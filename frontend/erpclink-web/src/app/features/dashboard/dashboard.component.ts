@@ -1,0 +1,105 @@
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
+import { AuthService } from '../../core/auth/auth.service';
+import { Permissions } from '../../core/permissions/permissions';
+import { LaserDashboardApi } from '../laser-clinic/services/laser-dashboard-api.service';
+import { CustomersApi } from '../laser-clinic/services/customers-api.service';
+import {
+  CustomerListItemDto,
+  LASER_APPOINTMENT_STATUS_BADGE,
+  LASER_APPOINTMENT_STATUS_LABELS,
+  LaserAppointmentDto,
+  LaserAppointmentStatus,
+  LaserDashboardDto,
+  formatDateAr,
+  formatTimeAr
+} from '../laser-clinic/models/laser-clinic.models';
+import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
+import { HasPermissionDirective } from '../../shared/directives/has-permission.directive';
+
+@Component({
+  selector: 'app-dashboard',
+  standalone: true,
+  imports: [ReactiveFormsModule, RouterLink, LoadingSpinnerComponent, HasPermissionDirective, DecimalPipe],
+  templateUrl: './dashboard.component.html',
+  styleUrl: './dashboard.component.scss'
+})
+export class DashboardComponent implements OnInit {
+  private readonly auth = inject(AuthService);
+  private readonly api = inject(LaserDashboardApi);
+  private readonly customersApi = inject(CustomersApi);
+
+  readonly permissions = Permissions;
+  readonly user = this.auth.user;
+  readonly loading = signal(true);
+  readonly data = signal<LaserDashboardDto | null>(null);
+  readonly customerCount = signal(0);
+  readonly recentCustomers = signal<CustomerListItemDto[]>([]);
+  readonly date = new FormControl(new Date().toISOString().slice(0, 10), { nonNullable: true });
+  readonly formatTimeAr = formatTimeAr;
+  readonly formatDateAr = formatDateAr;
+
+  ngOnInit(): void {
+    this.load();
+    this.date.valueChanges.subscribe(() => this.load());
+  }
+
+  greeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'صباح الخير';
+    if (hour < 18) return 'مساء الخير';
+    return 'مساء الخير';
+  }
+
+  firstName(): string {
+    const name = this.user()?.fullName?.trim();
+    if (!name) return 'ضيف';
+    return name.split(/\s+/)[0];
+  }
+
+  load(): void {
+    this.loading.set(true);
+    forkJoin({
+      dash: this.api.get(this.date.value),
+      customers: this.customersApi.search(undefined, true, 'LastAppointment')
+    }).subscribe({
+      next: ({ dash, customers }) => {
+        this.data.set(dash);
+        this.customerCount.set(customers.length);
+        this.recentCustomers.set(customers.slice(0, 30));
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false)
+    });
+  }
+
+  serviceNames(row: LaserAppointmentDto): string {
+    return row.services?.map((s) => s.serviceName).join(' + ') || '—';
+  }
+
+  lastBookingLabel(row: CustomerListItemDto): string {
+    const last = row.lastAppointment;
+    if (!last) return 'لا يوجد حجز سابق';
+    const services = last.serviceNames?.length ? last.serviceNames.join(' + ') : '—';
+    return `${this.formatDateAr(last.date)} · ${this.formatTimeAr(last.startTime)} · ${services}`;
+  }
+
+  statusLabel(status: LaserAppointmentStatus): string {
+    return LASER_APPOINTMENT_STATUS_LABELS[status];
+  }
+
+  badgeClass(status: LaserAppointmentStatus): string {
+    return LASER_APPOINTMENT_STATUS_BADGE[status];
+  }
+
+  lastStatusLabel(row: CustomerListItemDto): string {
+    return row.lastAppointment ? this.statusLabel(row.lastAppointment.status) : '—';
+  }
+
+  lastBadgeClass(row: CustomerListItemDto): string {
+    return row.lastAppointment ? this.badgeClass(row.lastAppointment.status) : 'badge--muted';
+  }
+}

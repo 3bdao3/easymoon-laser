@@ -1,0 +1,86 @@
+@if (loading()) {
+  <app-loading-spinner />
+} @else {
+  @if (pkg(); as p) {
+  <app-page-header [title]="p.name" [subtitle]="p.packageCode">
+    <a actions class="btn btn--ghost" routerLink="/app/packages">رجوع</a>
+  </app-page-header>
+
+  <section class="feature-page">
+    <div class="card form-stack">
+      <p><strong>الحالة:</strong> <app-status-badge [status]="statusLabel(p)" /></p>
+      @if (p.isActive) {
+        <form [formGroup]="headerForm" (ngSubmit)="saveHeader()">
+          <div class="field">
+            <label class="field__label" for="name">الاسم</label>
+            <input id="name" class="field__input" formControlName="name" />
+          </div>
+          <div class="field">
+            <label class="field__label" for="description">الوصف</label>
+            <textarea id="description" class="field__input" rows="2" formControlName="description"></textarea>
+          </div>
+          <button type="submit" class="btn btn--primary" *appHasPermission="permissions.PackagesUpdate" [disabled]="savingHeader()">حفظ</button>
+        </form>
+      } @else {
+        <p class="text-muted">الباقة غير نشطة — لا يمكن تعديل المحتويات.</p>
+      }
+    </div>
+
+    <div class="card data-table-wrap">
+      <h3>خدمات الباقة</h3>
+      @if (p.items.length === 0) {
+        <p>لا توجد خدمات بعد.</p>
+      } @else {
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الرمز</th>
+              <th>الخدمة</th>
+              <th>الكمية</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of p.items; track item.id) {
+              <tr>
+                <td>{{ item.serviceCode }}</td>
+                <td>{{ item.serviceName }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>
+                  @if (p.isActive) {
+                    <button type="button" class="btn btn--ghost btn--sm" *appHasPermission="permissions.PackagesUpdate" (click)="removeItem(item)">إزالة</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    @if (p.isActive) {
+      <form class="card form-stack" [formGroup]="addItemForm" (ngSubmit)="addItem()" *appHasPermission="permissions.PackagesUpdate">
+        <h3>إضافة خدمة</h3>
+        <div class="field">
+          <label class="field__label" for="serviceId">الخدمة</label>
+          <select id="serviceId" class="field__input" formControlName="serviceId">
+            <option value="">— اختر —</option>
+            @for (s of activeServices(); track s.id) {
+              <option [value]="s.id">{{ s.name }} ({{ s.serviceCode }})</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label class="field__label" for="quantity">الكمية</label>
+          <input id="quantity" type="number" step="0.01" class="field__input" formControlName="quantity" />
+        </div>
+        <div class="field">
+          <label class="field__label" for="sortOrder">الترتيب</label>
+          <input id="sortOrder" type="number" class="field__input" formControlName="sortOrder" />
+        </div>
+        <button type="submit" class="btn btn--primary">إضافة</button>
+      </form>
+    }
+  </section>
+  }
+}

@@ -1,0 +1,70 @@
+<div class="page">
+  <app-page-header [title]="isEdit ? 'تعديل الجدول' : 'جدول جديد'" subtitle="Scheduling" />
+
+  @if (loading()) {
+    <app-loading-spinner label="جاري التحميل..." />
+  } @else {
+    <form class="card" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">معرّف الطبيب</span>
+          <input class="field__input" formControlName="doctorId" />
+        </label>
+        <label class="field">
+          <span class="field__label">العيادة</span>
+          <select class="field__select" formControlName="clinicId">
+            <option value="">— اختر —</option>
+            @for (clinic of clinicOptions(); track clinic.id) {
+              <option [value]="clinic.id">{{ clinic.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span class="field__label">يوم الأسبوع</span>
+          <select class="field__select" formControlName="dayOfWeek">
+            @for (day of dayOptions; track day.value) {
+              <option [value]="day.value">{{ day.label }}</option>
+            }
+          </select>
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">من</span>
+          <input class="field__input" type="time" formControlName="startTime" step="1" />
+        </label>
+        <label class="field">
+          <span class="field__label">إلى</span>
+          <input class="field__input" type="time" formControlName="endTime" step="1" />
+        </label>
+        <label class="field">
+          <span class="field__label">مدة الموعد (دقيقة)</span>
+          <input class="field__input" type="number" formControlName="slotDurationMinutes" min="5" max="240" />
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field__label">ساري من</span>
+          <input class="field__input" type="date" formControlName="effectiveFrom" />
+        </label>
+        <label class="field">
+          <span class="field__label">ساري إلى (اختياري)</span>
+          <input class="field__input" type="date" formControlName="effectiveTo" />
+        </label>
+      </div>
+
+      <div class="page__toolbar">
+        <a class="btn btn--ghost" routerLink="/app/scheduling">إلغاء</a>
+        <button class="btn btn--primary" type="submit" [disabled]="submitting()">
+          @if (submitting()) {
+            <app-loading-spinner size="sm" label="" />
+          } @else {
+            حفظ
+          }
+        </button>
+      </div>
+    </form>
+  }
+</div>

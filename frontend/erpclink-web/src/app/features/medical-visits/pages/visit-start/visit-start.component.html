@@ -1,0 +1,28 @@
+<app-page-header title="بدء زيارة طبية" subtitle="ربط الزيارة بموعد (واختيارياً بصف الانتظار)">
+  <a actions class="btn btn--ghost" routerLink="/app/medical-visits">رجوع</a>
+</app-page-header>
+
+<section class="feature-page">
+  <form class="card form-grid" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field">
+      <label class="field__label" for="appointmentId">معرف الموعد *</label>
+      <input id="appointmentId" class="field__input" formControlName="appointmentId" autocomplete="off" />
+      @if (form.controls.appointmentId.touched && form.controls.appointmentId.invalid) {
+        <span class="field__error">معرف موعد صالح (UUID) مطلوب.</span>
+      }
+    </div>
+    <div class="field">
+      <label class="field__label" for="queueEntryId">معرف صف الانتظار (اختياري)</label>
+      <input id="queueEntryId" class="field__input" formControlName="queueEntryId" autocomplete="off" />
+      @if (form.controls.queueEntryId.touched && form.controls.queueEntryId.invalid) {
+        <span class="field__error">يجب أن يكون UUID صالحاً أو فارغاً.</span>
+      }
+    </div>
+    <div class="action-bar">
+      @if (submitting()) {
+        <app-loading-spinner />
+      }
+      <button type="submit" class="btn btn--primary" [disabled]="submitting()">بدء الزيارة</button>
+    </div>
+  </form>
+</section>

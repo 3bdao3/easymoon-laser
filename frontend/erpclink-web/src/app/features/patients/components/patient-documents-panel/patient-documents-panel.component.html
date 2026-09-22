@@ -1,0 +1,296 @@
+<section class="docs-panel">
+  <header class="docs-panel__header">
+    <div>
+      <h2 class="docs-panel__title">المستندات الطبية</h2>
+      <p class="docs-panel__hint">تقارير، نتائج مخبرية، صور، ووصفات — بدون بيانات وهمية.</p>
+    </div>
+    <button
+      type="button"
+      class="btn btn--primary btn--sm"
+      *appHasPermission="permissions.PatientsDocumentsManage"
+      [disabled]="!patientActive()"
+      (click)="openUpload()"
+    >
+      رفع مستند
+    </button>
+  </header>
+
+  <form class="docs-panel__filters form-grid" [formGroup]="filterForm" (ngSubmit)="search(1)">
+    <label class="form-field">
+      <span class="form-field__label">بحث</span>
+      <input class="form-field__input" formControlName="query" placeholder="اسم الملف أو الوصف" />
+    </label>
+    <label class="form-field">
+      <span class="form-field__label">التصنيف</span>
+      <select
+        class="form-field__select"
+        formControlName="category"
+        (change)="onFilterCategoryChange()"
+      >
+        <option value="">الكل</option>
+        @for (opt of categoryOptions; track opt.value) {
+          <option [ngValue]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </label>
+    <label class="form-field">
+      <span class="form-field__label">النوع</span>
+      <select class="form-field__select" formControlName="documentType">
+        <option value="">الكل</option>
+        @for (opt of filterTypeOptions(); track opt.value) {
+          <option [ngValue]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </label>
+    <label class="form-field">
+      <span class="form-field__label">من تاريخ</span>
+      <input class="form-field__input" type="date" formControlName="dateFrom" />
+    </label>
+    <label class="form-field">
+      <span class="form-field__label">إلى تاريخ</span>
+      <input class="form-field__input" type="date" formControlName="dateTo" />
+    </label>
+    <label class="form-field">
+      <span class="form-field__label">الحالة</span>
+      <select class="form-field__select" formControlName="isActive">
+        <option value="active">نشط</option>
+        <option value="inactive">موقوف</option>
+        <option value="all">الكل</option>
+      </select>
+    </label>
+    <label class="form-field">
+      <span class="form-field__label">رفع بواسطة</span>
+      <input class="form-field__input" formControlName="uploadedBy" />
+    </label>
+    <div class="row-actions" style="align-items: flex-end">
+      <button type="submit" class="btn btn--primary btn--sm">تطبيق</button>
+      <button type="button" class="btn btn--ghost btn--sm" (click)="resetFilters()">إعادة ضبط</button>
+    </div>
+  </form>
+
+  @if (showUpload()) {
+    <div class="docs-panel__card" role="region" aria-label="رفع مستند">
+      <div class="docs-panel__card-head">
+        <h3 class="docs-panel__card-title">رفع مستند جديد</h3>
+        <button type="button" class="btn btn--ghost btn--sm" (click)="closeUpload()">إغلاق</button>
+      </div>
+      <form class="form-grid" [formGroup]="uploadForm" (ngSubmit)="submitUpload()">
+        <label class="form-field">
+          <span class="form-field__label">التصنيف *</span>
+          <select class="form-field__select" formControlName="category">
+            @for (opt of categoryOptions; track opt.value) {
+              <option [ngValue]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">النوع *</span>
+          <select class="form-field__select" formControlName="documentType">
+            @for (opt of uploadTypeOptions(); track opt.value) {
+              <option [ngValue]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">تاريخ المستند</span>
+          <input class="form-field__input" type="date" formControlName="documentDate" />
+        </label>
+        <label class="form-field form-field--wide">
+          <span class="form-field__label">الوصف</span>
+          <input class="form-field__input" formControlName="description" />
+        </label>
+        <label class="form-field form-field--wide">
+          <span class="form-field__label">معرّف زيارة (اختياري)</span>
+          <input class="form-field__input" formControlName="medicalVisitId" />
+        </label>
+        <label class="form-field form-field--wide">
+          <span class="form-field__label">الملف *</span>
+          <input type="file" class="form-field__input" (change)="onFileSelected($event)" />
+          @if (selectedFile(); as f) {
+            <span class="docs-panel__file-meta">{{ f.name }} — {{ formatSize(f.size) }}</span>
+          }
+        </label>
+        @if (duplicateConflict()) {
+          <label class="form-field form-field--wide docs-panel__duplicate">
+            <input
+              type="checkbox"
+              [checked]="allowPossibleDuplicate()"
+              (change)="allowPossibleDuplicate.set($any($event.target).checked)"
+            />
+            <span>السماح برفع مستند قد يكون مكرراً</span>
+          </label>
+        }
+        <div class="row-actions">
+          <button type="submit" class="btn btn--primary" [disabled]="uploadSaving() || !patientActive()">
+            {{ uploadSaving() ? 'جاري الرفع…' : 'رفع' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  @if (editingId(); as editId) {
+    <div class="docs-panel__card" role="region" aria-label="تعديل بيانات مستند">
+      <div class="docs-panel__card-head">
+        <h3 class="docs-panel__card-title">تعديل بيانات المستند</h3>
+        <button type="button" class="btn btn--ghost btn--sm" (click)="cancelEdit()">إلغاء</button>
+      </div>
+      <form class="form-grid" [formGroup]="editForm" (ngSubmit)="saveEdit()">
+        <label class="form-field">
+          <span class="form-field__label">التصنيف *</span>
+          <select class="form-field__select" formControlName="category">
+            @for (opt of categoryOptions; track opt.value) {
+              <option [ngValue]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">النوع *</span>
+          <select class="form-field__select" formControlName="documentType">
+            @for (opt of editTypeOptions(); track opt.value) {
+              <option [ngValue]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">تاريخ المستند</span>
+          <input class="form-field__input" type="date" formControlName="documentDate" />
+        </label>
+        <label class="form-field form-field--wide">
+          <span class="form-field__label">الوصف</span>
+          <input class="form-field__input" formControlName="description" />
+        </label>
+        <label class="form-field form-field--wide">
+          <span class="form-field__label">معرّف زيارة</span>
+          <input class="form-field__input" formControlName="medicalVisitId" />
+        </label>
+        <div class="row-actions">
+          <button type="submit" class="btn btn--primary" [disabled]="editSaving() || !patientActive()">
+            حفظ
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  @if (loading()) {
+    <app-loading-spinner label="جاري تحميل المستندات…" />
+  } @else if (error()) {
+    <p class="p360-error">تعذر تحميل المستندات.</p>
+  } @else if (!items().length) {
+    <app-empty-state
+      title="لا توجد مستندات"
+      message="ارفع تقارير أو نتائج مخبرية أو صور طبية عند توفرها."
+    />
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>الملف</th>
+            <th>التصنيف</th>
+            <th>النوع</th>
+            <th>التاريخ</th>
+            <th>الحجم</th>
+            <th>الحالة</th>
+            <th>رفع</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (doc of items(); track doc.id) {
+            <tr [class.docs-panel__row--inactive]="!doc.isActive">
+              <td>
+                <div class="docs-panel__file-name">{{ doc.originalFileName }}</div>
+                @if (doc.description) {
+                  <div class="docs-panel__file-desc">{{ doc.description }}</div>
+                }
+              </td>
+              <td>{{ categoryLabel(doc.category) }}</td>
+              <td>{{ typeLabel(doc.documentType) }}</td>
+              <td>{{ doc.documentDate || '—' }}</td>
+              <td>{{ formatSize(doc.fileSizeBytes) }}</td>
+              <td>
+                <app-status-badge [status]="doc.isActive ? 'نشط' : 'موقوف'" />
+              </td>
+              <td>
+                <div>{{ doc.createdAtUtc | date: 'mediumDate' }}</div>
+                @if (doc.createdBy) {
+                  <div class="docs-panel__muted">{{ doc.createdBy }}</div>
+                }
+              </td>
+              <td>
+                <div class="docs-panel__actions">
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="openPreview(doc)">
+                    معاينة
+                  </button>
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="downloadCurrent(doc)">
+                    تنزيل
+                  </button>
+                  @if (doc.isActive) {
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--sm"
+                      *appHasPermission="permissions.PatientsDocumentsManage"
+                      [disabled]="!patientActive()"
+                      (click)="startEdit(doc)"
+                    >
+                      تعديل
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--sm"
+                      *appHasPermission="permissions.PatientsDocumentsManage"
+                      [disabled]="!patientActive()"
+                      (click)="deactivate(doc)"
+                    >
+                      إيقاف
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="p360-muted">الإجمالي: {{ totalCount() }}</p>
+  }
+
+  @if (previewOpen()) {
+    <div class="docs-preview-backdrop" (click)="closePreview()" role="presentation">
+      <div
+        class="docs-preview-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="docs-preview-title"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="docs-preview-panel__head">
+          <h3 id="docs-preview-title" class="docs-preview-panel__title">
+            {{ previewDoc()?.originalFileName }}
+          </h3>
+          <button type="button" class="btn btn--ghost btn--sm" (click)="closePreview()">إغلاق</button>
+        </header>
+        @if (previewLoading()) {
+          <app-loading-spinner label="جاري التحميل…" />
+        } @else {
+          @if (previewMode() === 'image' && previewBlobUrl(); as url) {
+            <img class="docs-preview-panel__image" [src]="url" [alt]="previewDoc()?.originalFileName ?? ''" />
+          } @else if (previewMode() === 'pdf' && previewSafeUrl()) {
+            <iframe
+              class="docs-preview-panel__pdf"
+              [src]="previewSafeUrl()!"
+              title="معاينة PDF"
+            ></iframe>
+          } @else {
+            <p class="docs-preview-panel__unsupported">
+              لا تتوفر معاينة مباشرة لهذا النوع. استخدم التنزيل.
+            </p>
+            <button type="button" class="btn btn--primary" (click)="downloadCurrent()">تنزيل الملف</button>
+          }
+        }
+      </div>
+    </div>
+  }
+</section>

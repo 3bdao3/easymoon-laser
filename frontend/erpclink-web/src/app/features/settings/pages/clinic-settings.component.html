@@ -1,0 +1,36 @@
+<app-page-header [title]="'الإعدادات'" [subtitle]="'أوقات العمل وفواصل الحجز'" />
+
+@if (loading()) {
+  <app-loading-spinner label="جاري التحميل…" />
+} @else {
+  <form class="card" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-grid">
+      <label class="form-field">
+        <span class="form-field__label">وقت الفتح</span>
+        <input class="form-field__input" type="time" formControlName="openingTime" />
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">وقت الإغلاق</span>
+        <input class="form-field__input" type="time" formControlName="closingTime" />
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">فاصل المواعيد (دقيقة)</span>
+        <input
+          class="form-field__input"
+          type="number"
+          min="5"
+          formControlName="appointmentSlotIntervalMinutes"
+        />
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">الفاصل الافتراضي بين الجلسات (دقيقة)</span>
+        <input class="form-field__input" type="number" min="0" formControlName="defaultBufferMinutes" />
+      </label>
+    </div>
+    <div class="row-actions" *appHasPermission="permissions.LaserSettingsManage">
+      <button class="btn btn--primary" type="submit" [disabled]="saving()">
+        {{ saving() ? 'جاري الحفظ…' : 'حفظ الإعدادات' }}
+      </button>
+    </div>
+  </form>
+}

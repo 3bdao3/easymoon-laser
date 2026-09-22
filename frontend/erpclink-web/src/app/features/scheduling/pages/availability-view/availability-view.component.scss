@@ -1,0 +1,24 @@
+.doctor-pick-list {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+}
+
+.doctor-pick {
+  width: 100%;
+  text-align: start;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.slot-readonly {
+  padding: var(--space-2);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: var(--text-sm);
+}

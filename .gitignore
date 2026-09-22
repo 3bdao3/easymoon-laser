@@ -1,0 +1,19 @@
+# Ignore secrets / local overrides
+**/appsettings.*.local.json
+**/appsettings.Production.json
+**/secrets.json
+.env
+.env.*
+!.env.example
+*.user
+bin/
+obj/
+.vs/
+.angular/
+node_modules/
+dist/
+artifacts/
+**/App_Data/
+*.log
+.api-err.txt
+.api-out.txt

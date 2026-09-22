@@ -1,0 +1,13 @@
+<app-page-header [title]="'تعديل مريض'" [subtitle]="'Edit patient'">
+  <a actions class="btn btn--ghost" [routerLink]="['..']">رجوع</a>
+</app-page-header>
+
+<div class="card">
+  @if (loading()) {
+    <app-loading-spinner label="جاري التحميل…" />
+  } @else {
+    <app-patient-form [form]="form" [submitting]="submitting()" (submitForm)="submit()">
+      <a actions class="btn btn--ghost" [routerLink]="['..']">إلغاء</a>
+    </app-patient-form>
+  }
+</div>

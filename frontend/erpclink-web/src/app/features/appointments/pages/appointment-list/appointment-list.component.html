@@ -1,0 +1,120 @@
+<div class="page">
+  <app-page-header title="المواعيد" subtitle="Appointments" />
+
+  <div class="page__toolbar">
+    <span></span>
+    <a class="btn btn--primary" routerLink="/app/appointments/new" *appHasPermission="permissions.AppointmentsCreate">
+      حجز موعد
+    </a>
+  </div>
+
+  <div class="card">
+    <form class="filters" (ngSubmit)="applyFilters()">
+      <label class="field">
+        <span class="field__label">رقم الموعد</span>
+        <input
+          class="field__input"
+          [ngModel]="filters().appointmentNumber"
+          (ngModelChange)="updateFilter('appointmentNumber', $event)"
+          name="appointmentNumber"
+        />
+      </label>
+      <label class="field">
+        <span class="field__label">الحالة</span>
+        <select
+          class="field__select"
+          [ngModel]="filters().status"
+          (ngModelChange)="updateFilter('status', $event)"
+          name="status"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">تاريخ</span>
+        <input
+          class="field__input"
+          type="date"
+          [ngModel]="filters().date"
+          (ngModelChange)="updateFilter('date', $event)"
+          name="date"
+        />
+      </label>
+      <label class="field">
+        <span class="field__label">من</span>
+        <input
+          class="field__input"
+          type="date"
+          [ngModel]="filters().fromDate"
+          (ngModelChange)="updateFilter('fromDate', $event)"
+          name="fromDate"
+        />
+      </label>
+      <label class="field">
+        <span class="field__label">إلى</span>
+        <input
+          class="field__input"
+          type="date"
+          [ngModel]="filters().toDate"
+          (ngModelChange)="updateFilter('toDate', $event)"
+          name="toDate"
+        />
+      </label>
+      <button class="btn btn--primary" type="submit">بحث</button>
+    </form>
+  </div>
+
+  <div class="card">
+    @if (loading()) {
+      <app-loading-spinner label="جاري التحميل..." />
+    } @else if (items().length === 0) {
+      <app-empty-state title="لا توجد مواعيد" message="جرّب تغيير معايير البحث." />
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الرقم</th>
+              <th>التاريخ</th>
+              <th>الوقت</th>
+              <th>المريض</th>
+              <th>الطبيب</th>
+              <th>العيادة</th>
+              <th>الحالة</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of items(); track row.id) {
+              <tr>
+                <td>{{ row.appointmentNumber }}</td>
+                <td>{{ formatDateOnly(row.appointmentDate) }}</td>
+                <td>{{ formatTimeOnly(row.startTime) }}</td>
+                <td class="text-muted">{{ row.patientId }}</td>
+                <td class="text-muted">{{ row.doctorId }}</td>
+                <td class="text-muted">{{ row.clinicId }}</td>
+                <td><app-status-badge [status]="row.status" /></td>
+                <td>
+                  <a class="link" [routerLink]="['/app/appointments', row.id]">التفاصيل</a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <span>الصفحة {{ filters().page }} من {{ totalPages() }} — {{ totalCount() }} نتيجة</span>
+        <div class="pagination__controls">
+          <button class="btn btn--ghost btn--sm" type="button" [disabled]="!hasPrevious()" (click)="prevPage()">
+            السابق
+          </button>
+          <button class="btn btn--ghost btn--sm" type="button" [disabled]="!hasNext()" (click)="nextPage()">
+            التالي
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

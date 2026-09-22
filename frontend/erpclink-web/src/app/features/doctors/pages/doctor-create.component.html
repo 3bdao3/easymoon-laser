@@ -1,0 +1,8 @@
+<app-page-header [title]="'طبيب جديد'" [subtitle]="'New doctor'">
+  <a actions class="btn btn--ghost" routerLink="..">رجوع</a>
+</app-page-header>
+<div class="card">
+  <app-doctor-form [form]="form" [specialties]="specialties()" [submitting]="submitting()" (submitForm)="submit()">
+    <a actions class="btn btn--ghost" routerLink="..">إلغاء</a>
+  </app-doctor-form>
+</div>

@@ -1,0 +1,48 @@
+<app-page-header [title]="isEdit ? 'تعديل خدمة' : 'خدمة جديدة'" subtitle="الخدمات الطبية">
+  <a actions class="btn btn--ghost" routerLink="/app/services">رجوع</a>
+</app-page-header>
+
+<section class="feature-page">
+  @if (loading()) {
+    <app-loading-spinner />
+  } @else {
+    <form class="card form-stack" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="field">
+        <label class="field__label" for="serviceCode">رمز الخدمة</label>
+        <input id="serviceCode" class="field__input" formControlName="serviceCode" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="name">الاسم</label>
+        <input id="name" class="field__input" formControlName="name" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="description">الوصف</label>
+        <textarea id="description" class="field__input" rows="3" formControlName="description"></textarea>
+      </div>
+      <div class="field">
+        <label class="field__label" for="categoryId">التصنيف</label>
+        <select id="categoryId" class="field__input" formControlName="categoryId">
+          <option value="">— بدون —</option>
+          @for (c of categories(); track c.id) {
+            <option [value]="c.id">{{ c.name }} ({{ c.code }})</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label class="field__label" for="defaultPrice">السعر الافتراضي</label>
+        <input id="defaultPrice" type="number" step="0.01" class="field__input" formControlName="defaultPrice" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="currencyCode">العملة</label>
+        <input id="currencyCode" class="field__input" formControlName="currencyCode" maxlength="3" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="durationMinutes">المدة (دقيقة)</label>
+        <input id="durationMinutes" type="number" class="field__input" formControlName="durationMinutes" />
+      </div>
+      <div class="filters__actions">
+        <button type="submit" class="btn btn--primary" [disabled]="submitting()">حفظ</button>
+      </div>
+    </form>
+  }
+</section>

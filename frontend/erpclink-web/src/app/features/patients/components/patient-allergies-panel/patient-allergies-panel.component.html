@@ -1,0 +1,128 @@
+<section class="allergies-panel">
+  @if (!compact()) {
+    <header class="allergies-panel__header">
+      <div>
+        <h2 class="allergies-panel__title">الحساسيات</h2>
+        <p class="allergies-panel__hint">معلومات سريرية ذات أولوية عالية — راجع قبل أي إجراء.</p>
+      </div>
+      @if (activeAllergies().length) {
+        <span class="allergies-panel__count" aria-label="عدد الحساسيات النشطة">
+          {{ activeAllergies().length }} نشطة
+        </span>
+      }
+    </header>
+  }
+
+  @if (activeAllergies().length && compact()) {
+    <div class="allergy-chips" role="list">
+      @for (a of activeAllergies(); track a.id) {
+        <span class="allergy-chip" [ngClass]="severityClass(a.severity)" role="listitem">
+          <strong>{{ a.name }}</strong>
+          <span>{{ severityLabels[a.severity] }}</span>
+        </span>
+      }
+    </div>
+  }
+
+  @if (!compact()) {
+    <form
+      *appHasPermission="permissions.PatientsAllergiesManage"
+      [formGroup]="allergyForm"
+      (ngSubmit)="saveAllergy()"
+      class="form-grid allergies-panel__form"
+    >
+      <label class="form-field">
+        <span class="form-field__label">الاسم *</span>
+        <input class="form-field__input" formControlName="name" />
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">رد الفعل</span>
+        <input class="form-field__input" formControlName="reaction" />
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">الشدة</span>
+        <select class="form-field__select" formControlName="severity">
+          @for (opt of severityOptions; track opt.value) {
+            <option [ngValue]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">ملاحظات</span>
+        <input class="form-field__input" formControlName="notes" />
+      </label>
+      <div class="row-actions" style="align-items: flex-end">
+        <button
+          class="btn btn--primary"
+          type="submit"
+          [disabled]="allergySaving() || !patientActive()"
+        >
+          {{ editingAllergyId() ? 'تحديث' : 'إضافة حساسية' }}
+        </button>
+        @if (editingAllergyId()) {
+          <button type="button" class="btn btn--ghost" (click)="cancelAllergyEdit()">إلغاء</button>
+        }
+      </div>
+    </form>
+
+    @if (!allergies().length) {
+      <app-empty-state
+        title="لا توجد حساسيات مسجّلة"
+        message="أضف الحساسيات المعروفة لحماية المريض أثناء الزيارات والوصفات."
+      />
+    } @else {
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>الاسم</th>
+              <th>الشدة</th>
+              <th>رد الفعل</th>
+              <th>ملاحظات</th>
+              <th>الحالة</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of allergies(); track a.id) {
+              <tr [class.allergies-panel__row--inactive]="!a.isActive">
+                <td>
+                  <span class="allergy-name" [ngClass]="severityClass(a.severity)">{{ a.name }}</span>
+                </td>
+                <td>{{ severityLabels[a.severity] }}</td>
+                <td>{{ a.reaction || '—' }}</td>
+                <td>{{ a.notes || '—' }}</td>
+                <td>
+                  <app-status-badge [status]="a.isActive ? 'نشط' : 'موقوف'" />
+                </td>
+                <td>
+                  @if (a.isActive) {
+                    <div class="row-actions">
+                      <button
+                        type="button"
+                        class="btn btn--ghost btn--sm"
+                        *appHasPermission="permissions.PatientsAllergiesManage"
+                        [disabled]="!patientActive()"
+                        (click)="startEditAllergy(a)"
+                      >
+                        تعديل
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn--danger btn--sm"
+                        *appHasPermission="permissions.PatientsAllergiesManage"
+                        (click)="deactivateAllergy(a)"
+                      >
+                        إيقاف
+                      </button>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

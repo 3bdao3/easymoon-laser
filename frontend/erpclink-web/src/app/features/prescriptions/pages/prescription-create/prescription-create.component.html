@@ -1,0 +1,87 @@
+<app-page-header title="وصفة جديدة" subtitle="ربط الوصفة بزيارة طبية وإضافة الأدوية">
+  <a actions class="btn btn--ghost" routerLink="/app/prescriptions">رجوع</a>
+</app-page-header>
+
+<section class="feature-page">
+  <form class="card form-grid" [formGroup]="headerForm" (ngSubmit)="submit()">
+    <div class="field">
+      <label class="field__label" for="medicalVisitId">معرف الزيارة الطبية *</label>
+      <input id="medicalVisitId" class="field__input" formControlName="medicalVisitId" />
+      @if (headerForm.controls.medicalVisitId.touched && headerForm.controls.medicalVisitId.invalid) {
+        <span class="field__error">UUID زيارة صالح مطلوب.</span>
+      }
+    </div>
+    <div class="field">
+      <label class="field__label" for="notes">ملاحظات الوصفة</label>
+      <textarea id="notes" class="field__textarea" formControlName="notes"></textarea>
+    </div>
+  </form>
+
+  <div class="card">
+    <h2 class="card__title">بنود الوصفة (اختياري عند الإنشاء)</h2>
+    <app-medication-picker (medicationSelected)="onMedicationPicked($event)" />
+    <form class="form-grid form-grid--2 item-panel" [formGroup]="itemForm" (ngSubmit)="addLine()">
+      <div class="field">
+        <label class="field__label" for="dosage">الجرعة *</label>
+        <input id="dosage" class="field__input" formControlName="dosage" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="frequency">التكرار *</label>
+        <input id="frequency" class="field__input" formControlName="frequency" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="duration">المدة</label>
+        <input id="duration" class="field__input" formControlName="duration" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="route">طريق الإعطاء</label>
+        <input id="route" class="field__input" formControlName="route" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="instructions">تعليمات</label>
+        <input id="instructions" class="field__input" formControlName="instructions" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="quantity">الكمية</label>
+        <input id="quantity" type="number" step="any" class="field__input" formControlName="quantity" />
+      </div>
+      <div class="action-bar">
+        <button type="submit" class="btn btn--ghost">إضافة بند</button>
+      </div>
+    </form>
+
+    @if (lines().length > 0) {
+      <div class="data-table-wrap item-panel">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الدواء</th>
+              <th>الجرعة</th>
+              <th>التكرار</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of lines(); track $index) {
+              <tr>
+                <td>{{ line.medicationNameSnapshot }}</td>
+                <td>{{ line.dosage }}</td>
+                <td>{{ line.frequency }}</td>
+                <td>
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="removeLine($index)">حذف</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <div class="action-bar">
+    @if (submitting()) {
+      <app-loading-spinner />
+    }
+    <button type="button" class="btn btn--primary" [disabled]="submitting()" (click)="submit()">إنشاء الوصفة</button>
+  </div>
+</section>

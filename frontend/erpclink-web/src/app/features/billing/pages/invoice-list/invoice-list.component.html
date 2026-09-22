@@ -1,0 +1,47 @@
+<app-page-header title="الفواتير" subtitle="Invoices">
+  <a actions class="btn btn--primary" routerLink="new" *appHasPermission="permissions.FinanceInvoicesCreate">
+    فاتورة جديدة
+  </a>
+</app-page-header>
+
+<form [formGroup]="filters" (ngSubmit)="search()" class="filters-row">
+  <input formControlName="invoiceNumber" placeholder="رقم الفاتورة" />
+  <select formControlName="status">
+    <option value="">كل الحالات</option>
+    <option value="Draft">Draft</option>
+    <option value="Issued">Issued</option>
+    <option value="PartiallyPaid">PartiallyPaid</option>
+    <option value="Paid">Paid</option>
+    <option value="Voided">Voided</option>
+  </select>
+  <button type="submit" class="btn btn-secondary">بحث</button>
+</form>
+
+@if (loading()) {
+  <app-loading-spinner />
+} @else {
+  @if (result(); as page) {
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>الرقم</th>
+          <th>الحالة</th>
+          <th>الإجمالي</th>
+          <th>المتبقي</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (inv of page.items; track inv.id) {
+          <tr>
+            <td>{{ inv.invoiceNumber || '—' }}</td>
+            <td>{{ inv.status }}</td>
+            <td>{{ inv.totalAmount }} {{ inv.currencyCode }}</td>
+            <td>{{ inv.outstandingAmount }}</td>
+            <td><a [routerLink]="[inv.id]">تفاصيل</a></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+}

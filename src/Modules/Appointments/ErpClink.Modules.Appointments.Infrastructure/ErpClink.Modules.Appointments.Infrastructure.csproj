@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ErpClink.Modules.Appointments.Application\ErpClink.Modules.Appointments.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\ErpClink.BuildingBlocks.Infrastructure\ErpClink.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Doctors\ErpClink.Modules.Doctors.Application\ErpClink.Modules.Doctors.Application.csproj" />
+    <ProjectReference Include="..\..\Patients\ErpClink.Modules.Patients.Application\ErpClink.Modules.Patients.Application.csproj" />
+    <ProjectReference Include="..\..\Scheduling\ErpClink.Modules.Scheduling.Application\ErpClink.Modules.Scheduling.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.8">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>
+

@@ -1,0 +1,18 @@
+<app-page-header [title]="'مستخدم جديد'" [subtitle]="'New user'">
+  <a actions class="btn btn--ghost" routerLink="..">رجوع</a>
+</app-page-header>
+<div class="card">
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <div class="form-grid">
+      <label class="form-field"><span class="form-field__label">الاسم الكامل *</span><input class="form-field__input" formControlName="fullName" /></label>
+      <label class="form-field"><span class="form-field__label">البريد *</span><input class="form-field__input" type="email" formControlName="email" /></label>
+      <label class="form-field"><span class="form-field__label">كلمة المرور *</span><input class="form-field__input" type="password" formControlName="password" /></label>
+      <label class="form-field"><span class="form-field__label">الهاتف</span><input class="form-field__input" formControlName="phoneNumber" /></label>
+      <label class="form-field"><span class="form-field__label">الأدوار (مفصولة بفاصلة)</span><input class="form-field__input" formControlName="roles" placeholder="Admin, Doctor" /></label>
+    </div>
+    <div class="row-actions">
+      <a class="btn btn--ghost" routerLink="..">إلغاء</a>
+      <button class="btn btn--primary" type="submit" [disabled]="submitting()">حفظ</button>
+    </div>
+  </form>
+</div>

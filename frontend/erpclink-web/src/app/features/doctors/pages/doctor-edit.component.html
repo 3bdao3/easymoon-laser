@@ -1,0 +1,12 @@
+<app-page-header [title]="'تعديل طبيب'" [subtitle]="'Edit doctor'">
+  <a actions class="btn btn--ghost" [routerLink]="['..']">رجوع</a>
+</app-page-header>
+<div class="card">
+  @if (loading()) {
+    <app-loading-spinner />
+  } @else {
+    <app-doctor-form [form]="form" [specialties]="specialties()" [submitting]="submitting()" (submitForm)="submit()">
+      <a actions class="btn btn--ghost" [routerLink]="['..']">إلغاء</a>
+    </app-doctor-form>
+  }
+</div>

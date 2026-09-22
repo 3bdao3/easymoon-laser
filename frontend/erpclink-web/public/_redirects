@@ -1,0 +1,3 @@
+# SPA fallback for Render Static Site / Netlify-style hosts.
+# Ensures client-side routes work on refresh (e.g. /login, /app/customers/123).
+/*    /index.html   200

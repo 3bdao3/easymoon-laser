@@ -1,0 +1,102 @@
+<app-page-header title="الأدوية" subtitle="البحث وإدارة catalog الأدوية">
+  <a actions class="btn btn--primary" routerLink="new" *appHasPermission="permissions.MedicationsCreate">
+    دواء جديد
+  </a>
+</app-page-header>
+
+<section class="feature-page">
+  <form class="card filters" [formGroup]="filters" (ngSubmit)="search()">
+    <div class="field">
+      <label class="field__label" for="q">بحث</label>
+      <input id="q" class="field__input" formControlName="q" placeholder="اسم، رمز، …" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="code">الرمز</label>
+      <input id="code" class="field__input" formControlName="code" />
+    </div>
+    <div class="field">
+      <label class="field__label">
+        <input type="checkbox" formControlName="activeOnly" />
+        النشطة فقط
+      </label>
+    </div>
+    <div class="filters__actions">
+      <button type="submit" class="btn btn--primary">بحث</button>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <app-loading-spinner />
+  } @else if (result()) {
+    @let page = result()!;
+    @if (page.items.length === 0) {
+      <app-empty-state title="لا توجد أدوية" />
+    } @else {
+      <div class="card data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الرمز</th>
+              <th>الاسم</th>
+              <th>الاسم العلمي</th>
+              <th>التركيز</th>
+              <th>الحالة</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of page.items; track trackById($index, row)) {
+              <tr>
+                <td>{{ row.code }}</td>
+                <td>{{ row.name }}</td>
+                <td>{{ row.genericName || '—' }}</td>
+                <td>{{ row.strength || '—' }}</td>
+                <td><app-status-badge [status]="statusLabel(row)" /></td>
+                <td>
+                  <a class="table-link" [routerLink]="[row.id, 'edit']" *appHasPermission="permissions.MedicationsUpdate">
+                    تعديل
+                  </a>
+                  @if (row.isActive) {
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--sm"
+                      *appHasPermission="permissions.MedicationsDeactivate"
+                      (click)="toggleActive(row)"
+                    >
+                      إيقاف
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--sm"
+                      *appHasPermission="permissions.MedicationsActivate"
+                      (click)="toggleActive(row)"
+                    >
+                      تفعيل
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <span>{{ page.totalCount }} دواء</span>
+        <div class="filters__actions">
+          <button type="button" class="btn btn--ghost" [disabled]="page.page <= 1" (click)="goToPage(page.page - 1)">
+            السابق
+          </button>
+          <button
+            type="button"
+            class="btn btn--ghost"
+            [disabled]="page.page >= totalPages()"
+            (click)="goToPage(page.page + 1)"
+          >
+            التالي
+          </button>
+        </div>
+      </div>
+    }
+  }
+</section>

@@ -1,0 +1,46 @@
+<app-page-header [title]="'التخصصات'" [subtitle]="'Specialties'">
+  <a actions class="btn btn--primary" routerLink="new" *appHasPermission="permissions.SpecialtiesManage">تخصص جديد</a>
+</app-page-header>
+<div class="card">
+  <label class="form-field" style="max-width: 12rem">
+    <span class="form-field__label">الحالة</span>
+    <select class="form-field__select" [formControl]="filters.controls.isActive">
+      <option value="all">الكل</option>
+      <option value="true">نشط</option>
+      <option value="false">موقوف</option>
+    </select>
+  </label>
+  @if (loading()) {
+    <app-loading-spinner />
+  } @else if (!items().length) {
+    <app-empty-state title="لا توجد تخصصات" />
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>الرمز</th><th>الاسم</th><th>الوصف</th><th>الحالة</th><th></th></tr>
+        </thead>
+        <tbody>
+          @for (row of items(); track row.id) {
+            <tr>
+              <td>{{ row.code }}</td>
+              <td>{{ row.name }}</td>
+              <td>{{ row.description || '—' }}</td>
+              <td><app-status-badge [status]="row.isActive ? 'نشط' : 'موقوف'" /></td>
+              <td>
+                <div class="row-actions">
+                  <a class="btn btn--ghost btn--sm" [routerLink]="[row.id, 'edit']" *appHasPermission="permissions.SpecialtiesManage">تعديل</a>
+                  @if (row.isActive) {
+                    <button type="button" class="btn btn--danger btn--sm" *appHasPermission="permissions.SpecialtiesManage" (click)="toggleActive(row)">إيقاف</button>
+                  } @else {
+                    <button type="button" class="btn btn--primary btn--sm" *appHasPermission="permissions.SpecialtiesManage" (click)="toggleActive(row)">تفعيل</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

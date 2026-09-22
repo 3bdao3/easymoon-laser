@@ -1,0 +1,46 @@
+<app-page-header [title]="'المستخدمون'" [subtitle]="'Administration — Users'">
+  <a actions class="btn btn--primary" routerLink="new" *appHasPermission="permissions.AdministrationUsersCreate">مستخدم جديد</a>
+</app-page-header>
+<div class="card">
+  @if (loading()) {
+    <app-loading-spinner />
+  } @else if (!users().length) {
+    <app-empty-state title="لا يوجد مستخدمون" />
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>الاسم</th>
+            <th>البريد</th>
+            <th>الهاتف</th>
+            <th>الأدوار</th>
+            <th>الحالة</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (u of users(); track u.id) {
+            <tr>
+              <td>{{ u.fullName }}</td>
+              <td>{{ u.email }}</td>
+              <td>{{ u.phoneNumber || '—' }}</td>
+              <td><span class="badge badge--muted">{{ u.roles.join(', ') || '—' }}</span></td>
+              <td><app-status-badge [status]="u.isActive ? 'نشط' : 'موقوف'" /></td>
+              <td>
+                <div class="row-actions">
+                  <a class="btn btn--ghost btn--sm" [routerLink]="[u.id, 'edit']" *appHasPermission="permissions.AdministrationUsersUpdate">تعديل</a>
+                  @if (u.isActive) {
+                    <button type="button" class="btn btn--danger btn--sm" *appHasPermission="permissions.AdministrationUsersUpdate" (click)="toggleActive(u)">إيقاف</button>
+                  } @else {
+                    <button type="button" class="btn btn--primary btn--sm" *appHasPermission="permissions.AdministrationUsersUpdate" (click)="toggleActive(u)">تفعيل</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

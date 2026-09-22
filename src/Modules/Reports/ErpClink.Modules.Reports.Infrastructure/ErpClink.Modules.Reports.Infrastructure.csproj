@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\ErpClink.Modules.Reports.Application\ErpClink.Modules.Reports.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\ErpClink.BuildingBlocks.Infrastructure\ErpClink.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Finance\ErpClink.Modules.Finance.Application\ErpClink.Modules.Finance.Application.csproj" />
+    <ProjectReference Include="..\..\Billing\ErpClink.Modules.Billing.Application\ErpClink.Modules.Billing.Application.csproj" />
+    <ProjectReference Include="..\..\Inventory\ErpClink.Modules.Inventory.Application\ErpClink.Modules.Inventory.Application.csproj" />
+    <ProjectReference Include="..\..\Assets\ErpClink.Modules.Assets.Application\ErpClink.Modules.Assets.Application.csproj" />
+    <ProjectReference Include="..\..\Procurement\ErpClink.Modules.Procurement.Application\ErpClink.Modules.Procurement.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>

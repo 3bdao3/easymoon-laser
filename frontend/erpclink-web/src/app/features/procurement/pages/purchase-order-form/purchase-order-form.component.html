@@ -1,0 +1,33 @@
+<app-page-header title="أمر شراء جديد" subtitle="المجاميع تُحسب على الخادم — المعاينة للعرض فقط" />
+
+<section class="feature-page">
+  <form class="card form-stack" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field">
+      <label class="field__label" for="supplierId">المورد *</label>
+      <select id="supplierId" class="field__input" formControlName="supplierId">
+        <option value="">— اختر —</option>
+        @for (s of suppliers(); track s.id) {
+          <option [value]="s.id">{{ s.name }} ({{ s.supplierCode }})</option>
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label class="field__label" for="orderDate">تاريخ الأمر</label>
+      <input id="orderDate" type="date" class="field__input" formControlName="orderDate" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="descriptionSnapshot">وصف البند *</label>
+      <input id="descriptionSnapshot" class="field__input" formControlName="descriptionSnapshot" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="quantity">الكمية</label>
+      <input id="quantity" type="number" class="field__input" formControlName="quantity" step="0.01" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="unitCost">تكلفة الوحدة</label>
+      <input id="unitCost" type="number" class="field__input" formControlName="unitCost" step="0.01" />
+    </div>
+    <p class="hint">معاينة إجمالي البند: {{ previewTotal() | number: '1.2-2' }} EGP</p>
+    <button type="submit" class="btn btn--primary" [disabled]="form.invalid">إنشاء مسودة</button>
+  </form>
+</section>

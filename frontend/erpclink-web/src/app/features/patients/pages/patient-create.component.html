@@ -1,0 +1,53 @@
+<app-page-header [title]="'تسجيل مريض جديد'" [subtitle]="'New Patient · بعد البحث وعدم إيجاد ملف'">
+  <a actions class="btn btn--ghost" routerLink="..">رجوع</a>
+</app-page-header>
+
+@if (duplicates().length) {
+  <div class="card patient-duplicate-warn" role="alert">
+    <h2 class="form-field__label">مريض محتمل موجود مسبقاً</h2>
+    <p class="patient-form-section__hint" style="margin-top: 0">
+      وُجد ملف بنفس الهاتف/الرقم القومي تقريباً. افتح الملف الموجود بدلاً من إنشاء مكرر. لا يتم الدمج تلقائياً.
+    </p>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>رقم الملف</th>
+            <th>الاسم</th>
+            <th>الهاتف</th>
+            <th>تاريخ الميلاد</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of duplicates(); track d.id) {
+            <tr>
+              <td>{{ d.patientNumber }}</td>
+              <td>{{ d.fullName }}</td>
+              <td>{{ d.phoneNumber }}</td>
+              <td>{{ d.dateOfBirth }}</td>
+              <td>
+                <a class="btn btn--ghost btn--sm" [routerLink]="['/app/patients', d.id]">فتح الملف</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <button type="button" class="btn btn--primary" (click)="confirmDespiteDuplicates()">
+      متابعة التسجيل رغم التشابه
+    </button>
+  </div>
+}
+
+<div class="card">
+  <app-patient-form [form]="form" [submitting]="submitting()" (submitForm)="submit()">
+    <div extraFields class="form-field">
+      <label>
+        <input type="checkbox" [formControl]="allowDuplicate" />
+        السماح بتسجيل مكرر محتمل
+      </label>
+    </div>
+    <a actions class="btn btn--ghost" routerLink="..">إلغاء</a>
+  </app-patient-form>
+</div>

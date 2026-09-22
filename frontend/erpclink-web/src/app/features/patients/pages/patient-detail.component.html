@@ -1,0 +1,801 @@
+@if (loading()) {
+  <app-loading-spinner label="جاري تحميل ملف المريض…" />
+} @else if (patient()) {
+  @let p = patient()!;
+  <div class="p360">
+    <header class="p360-header">
+      <div class="p360-header__identity">
+        <div class="p360-avatar" aria-hidden="true">{{ initials() }}</div>
+        <div class="p360-header__text">
+          <div class="p360-header__eyebrow">ملف المريض · Patient 360°</div>
+          <h1 class="p360-header__name">{{ p.fullName }}</h1>
+          <div class="p360-header__meta">
+            <span class="p360-pill p360-pill--strong">{{ p.patientNumber }}</span>
+            <span class="p360-meta-sep" aria-hidden="true">·</span>
+            <span>{{ ageLabel() }}</span>
+            <span class="p360-meta-sep" aria-hidden="true">·</span>
+            <span>{{ genderLabel(p.gender) }}</span>
+            <span class="p360-meta-sep" aria-hidden="true">·</span>
+            <app-status-badge [status]="p.isActive ? 'نشط' : 'موقوف'" />
+          </div>
+          <div class="p360-header__chips" aria-label="سياق المريض">
+            @if (relationshipLabel(); as rel) {
+              <span class="p360-chip" [class.p360-chip--accent]="visitContext()?.isReturningPatient">{{ rel }}</span>
+            }
+            @if (treatmentStateLabel(); as treat) {
+              <span
+                class="p360-chip"
+                [class.p360-chip--success]="visitContext()?.treatmentState === 'TreatmentCompleted'"
+                [class.p360-chip--info]="visitContext()?.treatmentState === 'InTreatment'"
+              >
+                {{ treat }}
+              </span>
+            }
+            @if (encounterKindLabel(); as enc) {
+              <span class="p360-chip p360-chip--muted">الزيارة الحالية: {{ enc }}</span>
+            }
+          </div>
+          <div class="p360-header__contact">
+            <span class="p360-phone">{{ p.phoneNumber }}</span>
+            <div class="p360-phone-actions">
+              <button type="button" class="btn btn--ghost btn--sm" (click)="copyPhone(p.phoneNumber)">
+                {{ phoneCopied() ? 'تم النسخ' : 'نسخ' }}
+              </button>
+              @if (telLink(p.phoneNumber); as tel) {
+                <a class="btn btn--ghost btn--sm" [href]="tel">اتصال</a>
+              }
+              @if (waLink(p.phoneNumber); as wa) {
+                <a class="btn btn--ghost btn--sm" [href]="wa" target="_blank" rel="noopener noreferrer">
+                  واتساب
+                </a>
+              }
+            </div>
+            @if (p.city) {
+              <span class="p360-muted">{{ p.city }}</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="p360-header__actions">
+        <a class="btn btn--ghost" routerLink="/app/patients">قائمة المرضى</a>
+        <a class="btn btn--ghost" routerLink="edit" *appHasPermission="permissions.PatientsUpdate">تعديل</a>
+        @if (canCreateAppointment() && p.isActive) {
+          <a class="btn btn--ghost" routerLink="/app/appointments/new">موعد / استشارة</a>
+        }
+        @if (canCompleteTreatment()) {
+          <button
+            type="button"
+            class="btn btn--primary"
+            [disabled]="completingTreatment()"
+            (click)="completeTreatment()"
+          >
+            إكمال العلاج
+          </button>
+        }
+        <button
+          type="button"
+          class="btn btn--ghost"
+          *appHasPermission="permissions.PatientsAllergiesManage"
+          [disabled]="!p.isActive"
+          (click)="selectTab('allergies')"
+        >
+          إضافة حساسية
+        </button>
+        <button type="button" class="btn btn--ghost" (click)="selectTab('documents')">المستندات</button>
+        @if (authHasVisits()) {
+          <button type="button" class="btn btn--ghost" (click)="selectTab('visits')">الزيارات</button>
+        }
+        @if (p.isActive) {
+          <button
+            type="button"
+            class="btn btn--danger"
+            *appHasPermission="permissions.PatientsDeactivate"
+            (click)="togglePatientActive()"
+          >
+            إيقاف الملف
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="btn btn--primary"
+            *appHasPermission="permissions.PatientsActivate"
+            (click)="togglePatientActive()"
+          >
+            تفعيل الملف
+          </button>
+        }
+      </div>
+    </header>
+
+    <nav class="p360-nav" aria-label="أقسام ملف المريض">
+      @for (tab of visibleTabs(); track tab.id) {
+        <button
+          type="button"
+          class="p360-nav__item"
+          [class.p360-nav__item--active]="activeTab() === tab.id"
+          [class.p360-nav__item--future]="tab.kind === 'future'"
+          (click)="selectTab(tab.id)"
+        >
+          {{ tab.label }}
+          @if (tab.kind === 'future') {
+            <span class="p360-nav__soon">قريباً</span>
+          }
+        </button>
+      }
+    </nav>
+
+    @if (activeTab() === 'overview') {
+      <div class="p360-stack">
+        @if (authHasVisits()) {
+          <section class="p360-section p360-section--context" aria-labelledby="ctx-title">
+            <div class="p360-section__head">
+              <h2 id="ctx-title" class="p360-section__title">سياق المريض</h2>
+              @if (canCompleteTreatment()) {
+                <button
+                  type="button"
+                  class="btn btn--primary btn--sm"
+                  [disabled]="completingTreatment()"
+                  (click)="completeTreatment()"
+                >
+                  إكمال العلاج
+                </button>
+              }
+            </div>
+            @let ctx = visitContext();
+            @if (visitContextError()) {
+              <p class="p360-error">تعذر تحميل سياق الزيارات.</p>
+            } @else if (ctx) {
+              <div class="p360-context-grid">
+                <div>
+                  <div class="detail-item__label">العلاقة بالعيادة</div>
+                  <div class="detail-item__value">{{ relationshipLabel() }}</div>
+                </div>
+                <div>
+                  <div class="detail-item__label">حالة العلاج</div>
+                  <div class="detail-item__value">{{ treatmentStateLabel() }}</div>
+                </div>
+                <div>
+                  <div class="detail-item__label">عدد الزيارات</div>
+                  <div class="detail-item__value">{{ ctx.totalVisits }}</div>
+                </div>
+                <div>
+                  <div class="detail-item__label">آخر زيارة</div>
+                  <div class="detail-item__value">
+                    @if (ctx.lastVisit; as last) {
+                      {{ last.visitDate }}
+                      <span class="p360-muted">· {{ last.status }}</span>
+                    } @else {
+                      —
+                    }
+                  </div>
+                </div>
+              </div>
+
+              @if (ctx.activeVisit; as active) {
+                <div class="p360-encounter">
+                  <h3 class="p360-subsection">الزيارة / المقابلة الحالية</h3>
+                  <div class="p360-context-grid">
+                    <div>
+                      <div class="detail-item__label">نوع السياق</div>
+                      <div class="detail-item__value">{{ encounterKindLabel() || '—' }}</div>
+                    </div>
+                    <div>
+                      <div class="detail-item__label">رقم الزيارة</div>
+                      <div class="detail-item__value">
+                        <a [routerLink]="['/app/medical-visits', active.id]">{{ active.visitNumber }}</a>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="detail-item__label">التاريخ</div>
+                      <div class="detail-item__value">{{ active.visitDate }}</div>
+                    </div>
+                    <div>
+                      <div class="detail-item__label">الشكوى / السبب</div>
+                      <div class="detail-item__value">{{ active.chiefComplaint || '—' }}</div>
+                    </div>
+                  </div>
+                  <p class="p360-muted">
+                    ملاحظة: «مريض عائد» حالة مشتقّة من السجل، بينما «استشارة / متابعة / زيارة أولى» تصف سياق الزيارة الحالية — وليست حالة ملف المريض الإدارية.
+                  </p>
+                </div>
+              } @else if (ctx.treatmentState === 'TreatmentCompleted') {
+                <p class="p360-muted">
+                  لا توجد زيارة نشطة. العلاج مكتمل حسب آخر الزيارات المكتملة — الملف يبقى نشطاً ويمكن فتح زيارة جديدة عند العودة.
+                </p>
+              } @else if (ctx.totalVisits === 0) {
+                <p class="p360-muted">مريض جديد بلا زيارات مسجّلة بعد. سجّل موعداً أو ابدأ زيارة عند توفرها.</p>
+              }
+            } @else if (relatedLoading()) {
+              <app-loading-spinner label="جاري تحميل السياق…" />
+            }
+          </section>
+        }
+
+        <section class="p360-section" aria-labelledby="alerts-title">
+          <h2 id="alerts-title" class="p360-section__title">تنبيهات مهمة</h2>
+          <div class="p360-alerts">
+            @if (!p.isActive) {
+              <div class="p360-alert p360-alert--warn" role="status">
+                <strong>المريض موقوف</strong>
+                <span>لا يمكن تحديث البيانات أو إضافة حساسيات جديدة.</span>
+              </div>
+            }
+            @if (criticalAllergyCount() > 0) {
+              <div class="p360-alert p360-alert--danger" role="alert">
+                <strong>حساسية شديدة / مهددة للحياة</strong>
+                <span>{{ criticalAllergyCount() }} سجل نشط — راجع قسم الحساسيات قبل أي إجراء.</span>
+              </div>
+            } @else if (activeAllergyCount() > 0) {
+              <div class="p360-alert p360-alert--warn" role="status">
+                <strong>حساسيات مسجّلة</strong>
+                <span>{{ activeAllergyCount() }} حساسية نشطة.</span>
+              </div>
+            }
+            @if (patientIsMinor()) {
+              <div class="p360-alert p360-alert--info" role="status">
+                <strong>قاصر</strong>
+                <span>
+                  راجع جهة اتصال الطوارئ
+                  @if (p.emergencyContactName || p.emergencyContactPhone) {
+                    — {{ p.emergencyContactName || '—' }}
+                    @if (p.emergencyContactPhone) {
+                      ({{ p.emergencyContactPhone }})
+                    }
+                  } @else {
+                    — لم تُسجّل بعد.
+                  }
+                </span>
+              </div>
+            }
+            @if (outstanding(); as out) {
+              @if (out.outstandingAmount > 0) {
+                <div class="p360-alert p360-alert--info" role="status">
+                  <strong>رصيد مستحق</strong>
+                  <span>{{ out.outstandingAmount }} {{ out.currencyCode }}</span>
+                </div>
+              }
+            }
+            @if (
+              p.isActive &&
+              criticalAllergyCount() === 0 &&
+              activeAllergyCount() === 0 &&
+              !patientIsMinor() &&
+              !(outstanding()?.outstandingAmount)
+            ) {
+              <p class="p360-muted">لا توجد تنبيهات حرجة حالياً.</p>
+            }
+          </div>
+        </section>
+
+        @if (activeAllergyCount() > 0) {
+          <section class="p360-section p360-section--allergy" aria-labelledby="allergy-ov-title">
+            <div class="p360-section__head">
+              <h2 id="allergy-ov-title" class="p360-section__title">الحساسيات</h2>
+              <button type="button" class="btn btn--ghost btn--sm" (click)="selectTab('allergies')">
+                إدارة
+              </button>
+            </div>
+            <app-patient-allergies-panel
+              [patientId]="p.id"
+              [patientActive]="p.isActive"
+              [initialAllergies]="allergies()"
+              [compact]="true"
+              (allergiesChange)="onAllergiesChange($event)"
+            />
+          </section>
+        }
+
+        <section class="p360-section" aria-labelledby="clinical-title">
+          <h2 id="clinical-title" class="p360-section__title">لمحة سريرية</h2>
+          <p class="p360-section__lead">
+            العلامات الحيوية غير متاحة من النظام الحالي. هذه منطقة جاهزة للربط المستقبلي.
+          </p>
+          <div class="p360-vitals" role="list">
+            @for (
+              label of ['ضغط الدم', 'الوزن', 'الطول', 'BMI', 'الحرارة', 'النبض', 'سكر الدم'];
+              track label
+            ) {
+              <div class="p360-vital" role="listitem">
+                <span class="p360-vital__label">{{ label }}</span>
+                <span class="p360-vital__value">—</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="p360-section p360-section--muted" aria-labelledby="ai-title">
+          <h2 id="ai-title" class="p360-section__title">ملخص المريض</h2>
+          <p class="p360-section__lead">
+            نقطة تكامل مستقبلية لملخص ذكي (ما تغيّر منذ آخر زيارة، المتابعات…). لا يتم توليد توصيات طبية حالياً.
+          </p>
+        </section>
+
+        <div class="p360-columns">
+          <section class="p360-section" aria-labelledby="timeline-title">
+            <div class="p360-section__head">
+              <h2 id="timeline-title" class="p360-section__title">النشاط الأخير</h2>
+              @if (relatedLoading()) {
+                <span class="p360-muted">جاري التحديث…</span>
+              }
+            </div>
+            @if (!timeline().length) {
+              <app-empty-state
+                title="لا يوجد نشاط بعد"
+                message="سيظهر هنا التسجيل والزيارات والوصفات والمدفوعات عند توفرها."
+              />
+            } @else {
+              <ol class="p360-timeline">
+                @for (item of timeline(); track item.id) {
+                  <li class="p360-timeline__item" [attr.data-kind]="item.kind">
+                    <div class="p360-timeline__dot" aria-hidden="true"></div>
+                    <div class="p360-timeline__body">
+                      <div class="p360-timeline__title">
+                        @if (item.link; as link) {
+                          <a [routerLink]="link">{{ item.title }}</a>
+                        } @else {
+                          {{ item.title }}
+                        }
+                      </div>
+                      @if (item.subtitle) {
+                        <div class="p360-timeline__sub">{{ item.subtitle }}</div>
+                      }
+                      <time class="p360-timeline__time" [attr.datetime]="item.at">
+                        {{ item.at | date: 'mediumDate' }}
+                      </time>
+                    </div>
+                  </li>
+                }
+              </ol>
+            }
+          </section>
+
+          <div class="p360-stack">
+            @if (authHasFinance()) {
+              <section class="p360-section" aria-labelledby="fin-ov-title">
+                <div class="p360-section__head">
+                  <h2 id="fin-ov-title" class="p360-section__title">ملخص مالي</h2>
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="selectTab('financial')">
+                    التفاصيل
+                  </button>
+                </div>
+                @if (outstandingError()) {
+                  <p class="p360-error">تعذر تحميل الملخص المالي.</p>
+                } @else if (outstanding()) {
+                  @let out = outstanding()!;
+                  <div class="p360-stat">
+                    <span class="p360-stat__label">المستحق</span>
+                    <span class="p360-stat__value">
+                      {{ out.outstandingAmount }} {{ out.currencyCode }}
+                    </span>
+                  </div>
+                  <p class="p360-muted">عدد الفواتير المعروضة: {{ invoices().totalCount }}</p>
+                } @else if (relatedLoading()) {
+                  <app-loading-spinner label="…" />
+                } @else {
+                  <p class="p360-muted">لا توجد بيانات مالية لهذا المريض.</p>
+                }
+              </section>
+            }
+
+            @if (authHasDocuments()) {
+              <section class="p360-section" aria-labelledby="docs-ov-title">
+                <div class="p360-section__head">
+                  <h2 id="docs-ov-title" class="p360-section__title">المستندات / النتائج</h2>
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="selectTab('documents')">
+                    عرض المستندات
+                  </button>
+                </div>
+                @if (documentsSummaryError()) {
+                  <p class="p360-error">تعذر تحميل ملخص المستندات.</p>
+                } @else {
+                  @if (documentsSummary(); as summary) {
+                    <div class="p360-stat">
+                      <span class="p360-stat__label">مستندات نشطة</span>
+                      <span class="p360-stat__value">{{ summary.totalActive }}</span>
+                    </div>
+                    @if (summary.byCategory.length) {
+                      <ul class="p360-doc-cats">
+                        @for (row of summary.byCategory; track row.category) {
+                          <li>
+                            <span>{{ documentCategoryLabel(row.category) }}</span>
+                            <strong>{{ row.count }}</strong>
+                          </li>
+                        }
+                      </ul>
+                    } @else if (!summary.totalActive) {
+                      <p class="p360-muted">لا توجد مستندات نشطة بعد.</p>
+                    }
+                  } @else if (relatedLoading()) {
+                    <app-loading-spinner label="…" />
+                  }
+                }
+              </section>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (activeTab() === 'contact') {
+      <section class="p360-section">
+        <h2 class="p360-section__title">معلومات التواصل</h2>
+        <div class="detail-grid">
+          <div>
+            <div class="detail-item__label">الهاتف</div>
+            <div class="detail-item__value p360-inline-actions">
+              {{ p.phoneNumber }}
+              <button type="button" class="btn btn--ghost btn--sm" (click)="copyPhone(p.phoneNumber)">نسخ</button>
+              @if (telLink(p.phoneNumber); as tel) {
+                <a class="btn btn--ghost btn--sm" [href]="tel">اتصال</a>
+              }
+              @if (waLink(p.phoneNumber); as wa) {
+                <a class="btn btn--ghost btn--sm" [href]="wa" target="_blank" rel="noopener noreferrer">واتساب</a>
+              }
+            </div>
+          </div>
+          <div>
+            <div class="detail-item__label">البريد</div>
+            <div class="detail-item__value">{{ p.email || '—' }}</div>
+          </div>
+          <div>
+            <div class="detail-item__label">المدينة</div>
+            <div class="detail-item__value">{{ p.city || '—' }}</div>
+          </div>
+          <div>
+            <div class="detail-item__label">العنوان</div>
+            <div class="detail-item__value">
+              {{ p.addressLine1 || '—' }}
+              @if (p.addressLine2) {
+                <span> — {{ p.addressLine2 }}</span>
+              }
+            </div>
+          </div>
+          <div>
+            <div class="detail-item__label">جهة اتصال الطوارئ</div>
+            <div class="detail-item__value">
+              {{ p.emergencyContactName || '—' }}
+              @if (p.emergencyContactPhone) {
+                <span> ({{ p.emergencyContactPhone }})</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <h3 class="p360-subsection">التعريف</h3>
+        <div class="detail-grid">
+          <div>
+            <div class="detail-item__label">رقم الملف</div>
+            <div class="detail-item__value">{{ p.patientNumber }}</div>
+          </div>
+          <div>
+            <div class="detail-item__label">الرقم القومي</div>
+            <div class="detail-item__value">{{ p.nationalId || '—' }}</div>
+          </div>
+          <div>
+            <div class="detail-item__label">تاريخ الميلاد</div>
+            <div class="detail-item__value">{{ p.dateOfBirth }}</div>
+          </div>
+          <div>
+            <div class="detail-item__label">العمر</div>
+            <div class="detail-item__value">{{ ageLabel() }}</div>
+          </div>
+          <div>
+            <div class="detail-item__label">الجنس</div>
+            <div class="detail-item__value">{{ genderLabel(p.gender) }}</div>
+          </div>
+        </div>
+
+        <h3 class="p360-subsection">سجل النظام</h3>
+        <div class="detail-grid">
+          <div>
+            <div class="detail-item__label">تاريخ التسجيل</div>
+            <div class="detail-item__value">{{ p.createdAtUtc | date: 'medium' }}</div>
+          </div>
+          <div>
+            <div class="detail-item__label">آخر تحديث</div>
+            <div class="detail-item__value">
+              {{ p.updatedAtUtc ? (p.updatedAtUtc | date: 'medium') : '—' }}
+            </div>
+          </div>
+        </div>
+      </section>
+    }
+
+    @if (activeTab() === 'history') {
+      <section class="p360-section">
+        <h2 class="p360-section__title">التاريخ الطبي (مستوى المريض)</h2>
+        <p class="p360-section__lead">
+          يعرض العناصر النشطة القادمة من ملف المريض. تشخيصات الزيارات تظهر ضمن وحدة الزيارات الطبية.
+        </p>
+        @if (!medicalHistory().length) {
+          <app-empty-state
+            title="لا يوجد تاريخ طبي مسجّل"
+            message="إضافة وتعديل التاريخ الطبي عبر واجهة برمجة التطبيقات غير مفعّلة في الواجهة الحالية (قراءة فقط من الملف)."
+          />
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>التصنيف</th>
+                  <th>الوصف</th>
+                  <th>التاريخ</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (h of medicalHistory(); track h.id) {
+                  <tr>
+                    <td>{{ h.category }}</td>
+                    <td>{{ h.description }}</td>
+                    <td>{{ h.createdAtUtc | date: 'mediumDate' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+
+    @if (activeTab() === 'allergies') {
+      <section class="p360-section">
+        <app-patient-allergies-panel
+          [patientId]="p.id"
+          [patientActive]="p.isActive"
+          [initialAllergies]="allergies()"
+          (allergiesChange)="onAllergiesChange($event)"
+        />
+      </section>
+    }
+
+    @if (activeTab() === 'visits') {
+      <section class="p360-section">
+        <div class="p360-section__head">
+          <h2 class="p360-section__title">الزيارات</h2>
+          <a
+            class="btn btn--ghost btn--sm"
+            [routerLink]="['/app/medical-visits/patients', p.id, 'history']"
+          >
+            عرض كامل
+          </a>
+        </div>
+        @if (visits().loading) {
+          <app-loading-spinner label="جاري تحميل الزيارات…" />
+        } @else if (visits().error) {
+          <p class="p360-error">تعذر تحميل الزيارات.</p>
+        } @else if (!visits().items.length) {
+          <app-empty-state title="لا توجد زيارات" message="ستظهر زيارات المريض هنا عند تسجيلها." />
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>الرقم</th>
+                  <th>التاريخ</th>
+                  <th>الحالة</th>
+                  <th>الشكوى</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (v of visits().items; track v.id) {
+                  <tr>
+                    <td>{{ v.visitNumber }}</td>
+                    <td>{{ v.visitDate }}</td>
+                    <td><app-status-badge [status]="v.status" /></td>
+                    <td>{{ v.chiefComplaint || '—' }}</td>
+                    <td>
+                      <a class="btn btn--ghost btn--sm" [routerLink]="['/app/medical-visits', v.id]">عرض</a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="p360-muted">الإجمالي: {{ visits().totalCount }}</p>
+        }
+      </section>
+    }
+
+    @if (activeTab() === 'prescriptions') {
+      <section class="p360-section">
+        <div class="p360-section__head">
+          <h2 class="p360-section__title">الوصفات</h2>
+          <a
+            class="btn btn--ghost btn--sm"
+            [routerLink]="['/app/prescriptions/patients', p.id, 'history']"
+          >
+            عرض كامل
+          </a>
+        </div>
+        @if (prescriptions().loading) {
+          <app-loading-spinner label="جاري تحميل الوصفات…" />
+        } @else if (prescriptions().error) {
+          <p class="p360-error">تعذر تحميل الوصفات.</p>
+        } @else if (!prescriptions().items.length) {
+          <app-empty-state title="لا توجد وصفات" message="ستظهر وصفات المريض هنا عند إصدارها." />
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>الرقم</th>
+                  <th>التاريخ</th>
+                  <th>الحالة</th>
+                  <th>أصناف</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (rx of prescriptions().items; track rx.id) {
+                  <tr>
+                    <td>{{ rx.prescriptionNumber }}</td>
+                    <td>{{ rx.prescriptionDate }}</td>
+                    <td><app-status-badge [status]="rx.status" /></td>
+                    <td>{{ rx.itemCount }}</td>
+                    <td>
+                      <a class="btn btn--ghost btn--sm" [routerLink]="['/app/prescriptions', rx.id]">عرض</a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="p360-muted">الإجمالي: {{ prescriptions().totalCount }}</p>
+        }
+      </section>
+    }
+
+    @if (activeTab() === 'appointments') {
+      <section class="p360-section">
+        <div class="p360-section__head">
+          <h2 class="p360-section__title">المواعيد</h2>
+          @if (canCreateAppointment() && p.isActive) {
+            <a class="btn btn--primary btn--sm" routerLink="/app/appointments/new">موعد جديد</a>
+          }
+        </div>
+        @if (appointments().loading) {
+          <app-loading-spinner label="جاري تحميل المواعيد…" />
+        } @else if (appointments().error) {
+          <p class="p360-error">تعذر تحميل المواعيد.</p>
+        } @else if (!appointments().items.length) {
+          <app-empty-state title="لا توجد مواعيد" message="ستظهر مواعيد المريض هنا عند حجزها." />
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>الرقم</th>
+                  <th>التاريخ</th>
+                  <th>الوقت</th>
+                  <th>الحالة</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (a of appointments().items; track a.id) {
+                  <tr>
+                    <td>{{ a.appointmentNumber }}</td>
+                    <td>{{ a.appointmentDate }}</td>
+                    <td>{{ a.startTime }}</td>
+                    <td><app-status-badge [status]="a.status" /></td>
+                    <td>
+                      <a class="btn btn--ghost btn--sm" [routerLink]="['/app/appointments', a.id]">عرض</a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="p360-muted">الإجمالي: {{ appointments().totalCount }}</p>
+        }
+      </section>
+    }
+
+    @if (activeTab() === 'financial') {
+      <section class="p360-section">
+        <h2 class="p360-section__title">ملخص مالي</h2>
+        <p class="p360-section__lead">عرض موجز فقط — التفاصيل الكاملة في وحدة الفواتير.</p>
+        @if (outstandingError()) {
+          <p class="p360-error">تعذر تحميل المستحقات.</p>
+        } @else if (outstanding()) {
+          @let out = outstanding()!;
+          <div class="p360-stat p360-stat--lg">
+            <span class="p360-stat__label">الرصيد المستحق</span>
+            <span class="p360-stat__value">{{ out.outstandingAmount }} {{ out.currencyCode }}</span>
+          </div>
+        }
+        @if (invoices().loading) {
+          <app-loading-spinner label="جاري تحميل الفواتير…" />
+        } @else if (invoices().error) {
+          <p class="p360-error">تعذر تحميل الفواتير.</p>
+        } @else if (!invoices().items.length) {
+          <app-empty-state title="لا توجد فواتير" message="ستظهر فواتير المريض هنا عند إنشائها." />
+        } @else {
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>الرقم</th>
+                  <th>التاريخ</th>
+                  <th>الحالة</th>
+                  <th>الإجمالي</th>
+                  <th>المستحق</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (inv of invoices().items; track inv.id) {
+                  <tr>
+                    <td>{{ inv.invoiceNumber || '—' }}</td>
+                    <td>{{ inv.invoiceDate }}</td>
+                    <td><app-status-badge [status]="inv.status" /></td>
+                    <td>{{ inv.totalAmount }} {{ inv.currencyCode }}</td>
+                    <td>{{ inv.outstandingAmount }}</td>
+                    <td>
+                      <a class="btn btn--ghost btn--sm" [routerLink]="['/app/billing/invoices', inv.id]">
+                        عرض
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="p360-muted">الإجمالي: {{ invoices().totalCount }}</p>
+        }
+      </section>
+    }
+
+    @if (activeTab() === 'medications') {
+      <section class="p360-section">
+        <h2 class="p360-section__title">الأدوية الحالية</h2>
+        <app-empty-state
+          title="قائمة الأدوية غير مفعّلة بعد"
+          message="عرض الأدوية الحالية/السابقة سيتم ربطه بوحدة الوصفات أو سجل أدوية منفصل مستقبلاً. يمكنك مراجعة الوصفات من تبويب الوصفات."
+        />
+      </section>
+    }
+
+    @if (activeTab() === 'laboratory') {
+      <section class="p360-section">
+        <h2 class="p360-section__title">المعمل</h2>
+        <app-empty-state
+          title="لا توجد نتائج معملية"
+          message="وحدة المختبر غير مفعّلة في النظام الحالي. هذه واجهة جاهزة للربط المستقبلي."
+        />
+      </section>
+    }
+
+    @if (activeTab() === 'radiology') {
+      <section class="p360-section">
+        <h2 class="p360-section__title">الأشعة</h2>
+        <app-empty-state
+          title="لا توجد تقارير أشعة"
+          message="وحدة الأشعة / PACS غير مفعّلة حالياً."
+        />
+      </section>
+    }
+
+    @if (activeTab() === 'documents') {
+      <section class="p360-section">
+        <app-patient-documents-panel
+          [patientId]="p.id"
+          [patientActive]="p.isActive"
+          (documentsChange)="onDocumentsChange($event)"
+        />
+      </section>
+    }
+
+    @if (activeTab() === 'insurance') {
+      <section class="p360-section">
+        <h2 class="p360-section__title">التأمين</h2>
+        <app-empty-state
+          title="لا توجد بيانات تأمين"
+          message="بيانات جهة التأمين وبوليصة التغطية غير مدعومة في الواجهة الخلفية الحالية. المريض يُعامل كمريض نقدي ما لم تُضف وحدة التأمين لاحقاً."
+        />
+      </section>
+    }
+  </div>
+}

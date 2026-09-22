@@ -1,0 +1,165 @@
+@if (loading()) {
+  <app-loading-spinner />
+} @else if (prescription()) {
+  @let rx = prescription()!;
+  <app-page-header [title]="'وصفة ' + rx.prescriptionNumber" [subtitle]="formatDate(rx.prescriptionDate)">
+    <a actions class="btn btn--ghost" routerLink="/app/prescriptions">القائمة</a>
+  </app-page-header>
+
+  <section class="feature-page">
+    <div class="card">
+      <dl class="meta-grid">
+        <div>
+          <dt>الحالة</dt>
+          <dd><app-status-badge [status]="rx.status" /></dd>
+        </div>
+        <div>
+          <dt>المريض</dt>
+          <dd>
+            <code>{{ rx.patientId }}</code>
+            <a class="table-link" [routerLink]="['/app/prescriptions/patients', rx.patientId, 'history']">التاريخ</a>
+          </dd>
+        </div>
+        <div>
+          <dt>الزيارة</dt>
+          <dd>
+            <a class="table-link" [routerLink]="['/app/medical-visits', rx.medicalVisitId]">
+              {{ rx.medicalVisitId }}
+            </a>
+          </dd>
+        </div>
+        @if (rx.issuedAtUtc) {
+          <div>
+            <dt>صُدرت</dt>
+            <dd>{{ formatDateTime(rx.issuedAtUtc) }}</dd>
+          </div>
+        }
+        @if (rx.cancelledAtUtc) {
+          <div>
+            <dt>أُلغيت</dt>
+            <dd>{{ formatDateTime(rx.cancelledAtUtc) }}</dd>
+          </div>
+        }
+      </dl>
+    </div>
+
+    @if (!editable()) {
+      <p class="alert">عرض للقراءة فقط — الوصفة ليست مسودة.</p>
+    }
+
+    <form class="card form-grid" [formGroup]="notesForm" (ngSubmit)="saveNotes()">
+      <h2 class="card__title">ملاحظات</h2>
+      <div class="field">
+        <textarea class="field__textarea" formControlName="notes" rows="3"></textarea>
+      </div>
+      @if (editable()) {
+        <div class="action-bar" *appHasPermission="permissions.PrescriptionsUpdate">
+          <button type="submit" class="btn btn--primary" [disabled]="savingNotes()">حفظ الملاحظات</button>
+        </div>
+      }
+    </form>
+
+    <div class="card">
+      <h2 class="card__title">الأدوية</h2>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الدواء</th>
+              <th>الجرعة</th>
+              <th>التكرار</th>
+              <th>المدة</th>
+              <th>الكمية</th>
+              @if (editable()) {
+                <th></th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of rx.items; track trackItem($index, item)) {
+              <tr>
+                <td>{{ item.medicationNameSnapshot }}</td>
+                <td>{{ item.dosage }}</td>
+                <td>{{ item.frequency }}</td>
+                <td>{{ item.duration || '—' }}</td>
+                <td>{{ item.quantity ?? '—' }}</td>
+                @if (editable()) {
+                  <td>
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="startEditItem(item)">تعديل</button>
+                    <button type="button" class="btn btn--ghost btn--sm" (click)="removeItem(item)">حذف</button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (editable()) {
+        <div class="item-panel" *appHasPermission="permissions.PrescriptionsUpdate">
+          <h3 class="card__title">{{ editingItem() ? 'تعديل بند' : 'إضافة بند' }}</h3>
+          @if (!editingItem()) {
+            <app-medication-picker (medicationSelected)="onMedicationPicked($event)" />
+          } @else {
+            <p class="selected-med">تعديل: {{ editingItem()!.medicationNameSnapshot }}</p>
+          }
+          <form class="form-grid form-grid--2" [formGroup]="itemForm" (ngSubmit)="submitItem()">
+            <div class="field">
+              <label class="field__label">الجرعة *</label>
+              <input class="field__input" formControlName="dosage" />
+            </div>
+            <div class="field">
+              <label class="field__label">التكرار *</label>
+              <input class="field__input" formControlName="frequency" />
+            </div>
+            <div class="field">
+              <label class="field__label">المدة</label>
+              <input class="field__input" formControlName="duration" />
+            </div>
+            <div class="field">
+              <label class="field__label">طريق الإعطاء</label>
+              <input class="field__input" formControlName="route" />
+            </div>
+            <div class="field">
+              <label class="field__label">ترتيب</label>
+              <input class="field__input" type="number" formControlName="sortOrder" />
+            </div>
+            <div class="action-bar">
+              @if (editingItem()) {
+                <button type="button" class="btn btn--ghost" (click)="cancelItemEdit()">إلغاء</button>
+              }
+              <button type="submit" class="btn btn--primary" [disabled]="itemBusy()">
+                {{ editingItem() ? 'حفظ البند' : 'إضافة' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      }
+    </div>
+
+    <div class="action-bar">
+      @if (editable()) {
+        <button
+          type="button"
+          class="btn btn--primary"
+          *appHasPermission="permissions.PrescriptionsIssue"
+          (click)="issuePrescription()"
+        >
+          إصدار الوصفة
+        </button>
+      }
+      @if (canCancel(rx)) {
+        <button
+          type="button"
+          class="btn btn--danger"
+          *appHasPermission="permissions.PrescriptionsCancel"
+          (click)="cancelPrescription()"
+        >
+          إلغاء الوصفة
+        </button>
+      }
+    </div>
+  </section>
+} @else {
+  <app-page-header title="وصفة غير موجودة" />
+}

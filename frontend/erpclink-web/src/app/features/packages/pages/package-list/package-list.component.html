@@ -1,0 +1,65 @@
+<app-page-header title="باقات الخدمات" subtitle="حزم الخدمات الطبية">
+  <a actions class="btn btn--primary" routerLink="new" *appHasPermission="permissions.PackagesCreate">باقة جديدة</a>
+</app-page-header>
+
+<section class="feature-page">
+  <form class="card filters" [formGroup]="filters" (ngSubmit)="search()">
+    <div class="field">
+      <label class="field__label" for="query">بحث</label>
+      <input id="query" class="field__input" formControlName="query" />
+    </div>
+    <div class="field">
+      <label class="field__label"><input type="checkbox" formControlName="isActive" /> النشطة فقط</label>
+    </div>
+    <div class="filters__actions"><button type="submit" class="btn btn--primary">بحث</button></div>
+  </form>
+
+  @if (loading()) {
+    <app-loading-spinner />
+  } @else {
+    @if (result(); as page) {
+    @if (page.items.length === 0) {
+      <app-empty-state title="لا توجد باقات" />
+    } @else {
+      <div class="card data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الرمز</th>
+              <th>الاسم</th>
+              <th>عدد الخدمات</th>
+              <th>الحالة</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of page.items; track row.id) {
+              <tr>
+                <td>{{ row.packageCode }}</td>
+                <td>{{ row.name }}</td>
+                <td>{{ row.itemCount }}</td>
+                <td><app-status-badge [status]="statusLabel(row)" /></td>
+                <td>
+                  <a class="table-link" [routerLink]="[row.id]">تفاصيل</a>
+                  @if (row.isActive) {
+                    <button type="button" class="btn btn--ghost btn--sm" *appHasPermission="permissions.PackagesDeactivate" (click)="toggleActive(row)">إيقاف</button>
+                  } @else {
+                    <button type="button" class="btn btn--ghost btn--sm" *appHasPermission="permissions.PackagesActivate" (click)="toggleActive(row)">تفعيل</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <span>{{ page.totalCount }} باقة</span>
+        <div class="filters__actions">
+          <button type="button" class="btn btn--ghost" [disabled]="page.page <= 1" (click)="goToPage(page.page - 1)">السابق</button>
+          <button type="button" class="btn btn--ghost" [disabled]="page.page >= totalPages()" (click)="goToPage(page.page + 1)">التالي</button>
+        </div>
+      </div>
+    }
+    }
+  }
+</section>

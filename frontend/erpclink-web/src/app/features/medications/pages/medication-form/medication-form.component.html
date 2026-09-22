@@ -1,0 +1,50 @@
+<app-page-header
+  [title]="isEdit ? 'تعديل دواء' : 'دواء جديد'"
+  subtitle="بيانات الدواء في الكatalog"
+>
+  <a actions class="btn btn--ghost" routerLink="/app/medications">رجوع</a>
+</app-page-header>
+
+@if (loading()) {
+  <app-loading-spinner />
+} @else {
+  <section class="feature-page">
+    <form class="card form-grid form-grid--2" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="field">
+        <label class="field__label" for="code">الرمز *</label>
+        <input id="code" class="field__input" formControlName="code" />
+        @if (form.controls.code.touched && form.controls.code.invalid) {
+          <span class="field__error">الرمز مطلوب.</span>
+        }
+      </div>
+      <div class="field">
+        <label class="field__label" for="name">الاسم *</label>
+        <input id="name" class="field__input" formControlName="name" />
+        @if (form.controls.name.touched && form.controls.name.invalid) {
+          <span class="field__error">الاسم مطلوب.</span>
+        }
+      </div>
+      <div class="field">
+        <label class="field__label" for="genericName">الاسم العلمي</label>
+        <input id="genericName" class="field__input" formControlName="genericName" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="strength">التركيز</label>
+        <input id="strength" class="field__input" formControlName="strength" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="dosageForm">الشكل الصيدلاني</label>
+        <input id="dosageForm" class="field__input" formControlName="dosageForm" />
+      </div>
+      <div class="field">
+        <label class="field__label" for="route">طريق الإعطاء</label>
+        <input id="route" class="field__input" formControlName="route" />
+      </div>
+      <div class="action-bar">
+        <button type="submit" class="btn btn--primary" [disabled]="submitting()">
+          {{ submitting() ? 'جاري الحفظ…' : isEdit ? 'حفظ' : 'إنشاء' }}
+        </button>
+      </div>
+    </form>
+  </section>
+}

@@ -1,0 +1,119 @@
+<form [formGroup]="form()" (ngSubmit)="onSubmit()">
+  <section class="patient-form-section">
+    <h2 class="patient-form-section__title">البيانات الشخصية</h2>
+    <div class="form-grid">
+      <label class="form-field">
+        <span class="form-field__label">الاسم الأول *</span>
+        <input class="form-field__input" type="text" formControlName="firstName" autocomplete="given-name" />
+        @if (form().controls['firstName'].touched && form().controls['firstName'].invalid) {
+          <span class="form-field__error">مطلوب</span>
+        }
+      </label>
+
+      <label class="form-field">
+        <span class="form-field__label">الاسم الأوسط</span>
+        <input class="form-field__input" type="text" formControlName="middleName" autocomplete="additional-name" />
+      </label>
+
+      <label class="form-field">
+        <span class="form-field__label">اسم العائلة *</span>
+        <input class="form-field__input" type="text" formControlName="lastName" autocomplete="family-name" />
+        @if (form().controls['lastName'].touched && form().controls['lastName'].invalid) {
+          <span class="form-field__error">مطلوب</span>
+        }
+      </label>
+
+      <label class="form-field">
+        <span class="form-field__label">تاريخ الميلاد *</span>
+        <input class="form-field__input" type="date" formControlName="dateOfBirth" />
+      </label>
+
+      <label class="form-field">
+        <span class="form-field__label">الجنس *</span>
+        <select class="form-field__select" formControlName="gender">
+          @for (opt of genderOptions; track opt.value) {
+            <option [ngValue]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="patient-form-section">
+    <h2 class="patient-form-section__title">التعريف والتواصل</h2>
+    <div class="form-grid">
+      <label class="form-field">
+        <span class="form-field__label">الرقم القومي</span>
+        <input class="form-field__input" type="text" inputmode="numeric" formControlName="nationalId" />
+      </label>
+
+      <label class="form-field">
+        <span class="form-field__label">الهاتف *</span>
+        <input
+          class="form-field__input"
+          type="tel"
+          formControlName="phoneNumber"
+          autocomplete="tel"
+          placeholder="01XXXXXXXXX"
+        />
+        @if (form().controls['phoneNumber'].touched && form().controls['phoneNumber'].invalid) {
+          <span class="form-field__error">مطلوب</span>
+        }
+      </label>
+
+      <label class="form-field">
+        <span class="form-field__label">البريد الإلكتروني</span>
+        <input class="form-field__input" type="email" formControlName="email" autocomplete="email" />
+      </label>
+    </div>
+  </section>
+
+  <section class="patient-form-section">
+    <h2 class="patient-form-section__title">العنوان</h2>
+    <div class="form-grid">
+      <label class="form-field">
+        <span class="form-field__label">المدينة / المحافظة</span>
+        <input class="form-field__input" type="text" formControlName="city" autocomplete="address-level2" />
+      </label>
+
+      <label class="form-field">
+        <span class="form-field__label">العنوان — سطر 1</span>
+        <input class="form-field__input" type="text" formControlName="addressLine1" autocomplete="address-line1" />
+      </label>
+
+      <label class="form-field">
+        <span class="form-field__label">العنوان — سطر 2</span>
+        <input class="form-field__input" type="text" formControlName="addressLine2" autocomplete="address-line2" />
+      </label>
+    </div>
+  </section>
+
+  <section class="patient-form-section">
+    <h2 class="patient-form-section__title">جهة اتصال الطوارئ / الوصي</h2>
+    <p class="patient-form-section__hint">مهم للقُصّر — يُفضّل تسجيل ولي الأمر أو جهة اتصال واضحة.</p>
+    <div class="form-grid">
+      <label class="form-field">
+        <span class="form-field__label">الاسم</span>
+        <input class="form-field__input" type="text" formControlName="emergencyContactName" />
+      </label>
+
+      <label class="form-field">
+        <span class="form-field__label">الهاتف</span>
+        <input class="form-field__input" type="tel" formControlName="emergencyContactPhone" />
+      </label>
+    </div>
+  </section>
+
+  <ng-content select="[extraFields]" />
+
+  <div class="toolbar__actions" style="margin-top: var(--space-4)">
+    <ng-content select="[actions]" />
+    <button class="btn btn--primary" type="submit" [disabled]="submitting() || form().invalid">
+      @if (submitting()) {
+        جاري الحفظ…
+      } @else {
+        حفظ
+      }
+    </button>
+  </div>
+</form>

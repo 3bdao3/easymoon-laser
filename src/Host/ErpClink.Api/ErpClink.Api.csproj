@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.8">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Modules\Administration\ErpClink.Modules.Administration.Infrastructure\ErpClink.Modules.Administration.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\ErpClink.BuildingBlocks.AspNetCore\ErpClink.BuildingBlocks.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\Modules\LaserClinic\ErpClink.Modules.LaserClinic.Infrastructure\ErpClink.Modules.LaserClinic.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <!-- Laser Clinic host: exclude legacy ERP controllers from compile (projects retained in solution). -->
+  <ItemGroup>
+    <Compile Remove="Controllers\PatientsController.cs" />
+    <Compile Remove="Controllers\PatientDocumentsController.cs" />
+    <Compile Remove="Controllers\DoctorsController.cs" />
+    <Compile Remove="Controllers\ClinicsController.cs" />
+    <Compile Remove="Controllers\SpecialtiesController.cs" />
+    <Compile Remove="Controllers\SchedulingController.cs" />
+    <Compile Remove="Controllers\AppointmentsController.cs" />
+    <Compile Remove="Controllers\QueueController.cs" />
+    <Compile Remove="Controllers\MedicalVisitsController.cs" />
+    <Compile Remove="Controllers\PrescriptionsController.cs" />
+    <Compile Remove="Controllers\MedicationsController.cs" />
+    <Compile Remove="Controllers\ServicesController.cs" />
+    <Compile Remove="Controllers\ServiceCategoriesController.cs" />
+    <Compile Remove="Controllers\PackagesController.cs" />
+    <Compile Remove="Controllers\BillingInvoicesController.cs" />
+    <Compile Remove="Controllers\BillingPaymentsController.cs" />
+    <Compile Remove="Controllers\ProcurementSuppliersController.cs" />
+    <Compile Remove="Controllers\ProcurementPurchaseOrdersController.cs" />
+    <Compile Remove="Controllers\InventoryWarehousesController.cs" />
+    <Compile Remove="Controllers\InventoryCategoriesController.cs" />
+    <Compile Remove="Controllers\InventoryItemsController.cs" />
+    <Compile Remove="Controllers\InventoryStockController.cs" />
+    <Compile Remove="Controllers\InventoryGoodsReceiptsController.cs" />
+    <Compile Remove="Controllers\InventoryValuationController.cs" />
+    <Compile Remove="Controllers\AssetsController.cs" />
+    <Compile Remove="Controllers\AssetsCategoriesController.cs" />
+    <Compile Remove="Controllers\AssetsLocationsController.cs" />
+    <Compile Remove="Controllers\AssetAccountingController.cs" />
+    <Compile Remove="Controllers\FinanceAccountsController.cs" />
+    <Compile Remove="Controllers\FinanceFiscalYearsController.cs" />
+    <Compile Remove="Controllers\FinanceFiscalPeriodsController.cs" />
+    <Compile Remove="Controllers\FinanceJournalsController.cs" />
+    <Compile Remove="Controllers\FinanceGeneralLedgerController.cs" />
+    <Compile Remove="Controllers\FinanceTrialBalanceController.cs" />
+    <Compile Remove="Controllers\FinanceArApControllers.cs" />
+    <Compile Remove="Controllers\ReportsController.cs" />
+  </ItemGroup>
+
+</Project>

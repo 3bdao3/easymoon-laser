@@ -1,0 +1,37 @@
+<div class="field">
+  <label class="field__label">{{ label() }}</label>
+  <input
+    class="field__input"
+    type="search"
+    [formControl]="query"
+    [disabled]="disabled()"
+    placeholder="اكتب اسم الدواء أو الرمز…"
+    autocomplete="off"
+  />
+  @if (searching()) {
+    <span class="selected-med">جاري البحث…</span>
+  }
+  @if (selected(); as med) {
+    <p class="selected-med">
+      المختار: <strong>{{ med.name }}</strong> ({{ med.code }})
+      @if (!disabled()) {
+        <button type="button" class="btn btn--ghost btn--sm" (click)="clear()">مسح</button>
+      }
+    </p>
+  }
+  @if (results().length > 0 && !disabled()) {
+    <ul class="search-results">
+      @for (med of results(); track med.id) {
+        <li>
+          <button type="button" (click)="pick(med)">
+            {{ med.name }}
+            @if (med.strength) {
+              — {{ med.strength }}
+            }
+            <span class="selected-med">({{ med.code }})</span>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>

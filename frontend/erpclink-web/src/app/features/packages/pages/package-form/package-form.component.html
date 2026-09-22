@@ -1,0 +1,23 @@
+<app-page-header title="باقة جديدة" subtitle="باقات الخدمات">
+  <a actions class="btn btn--ghost" routerLink="/app/packages">رجوع</a>
+</app-page-header>
+
+<section class="feature-page">
+  <form class="card form-stack" [formGroup]="form" (ngSubmit)="submit()">
+    <div class="field">
+      <label class="field__label" for="packageCode">رمز الباقة</label>
+      <input id="packageCode" class="field__input" formControlName="packageCode" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="name">الاسم</label>
+      <input id="name" class="field__input" formControlName="name" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="description">الوصف</label>
+      <textarea id="description" class="field__input" rows="3" formControlName="description"></textarea>
+    </div>
+    <div class="filters__actions">
+      <button type="submit" class="btn btn--primary" [disabled]="submitting()">حفظ</button>
+    </div>
+  </form>
+</section>

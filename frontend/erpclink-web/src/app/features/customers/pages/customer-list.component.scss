@@ -1,0 +1,255 @@
+.customers-card {
+  overflow: hidden;
+  padding: 0.85rem 0.9rem;
+}
+
+.customers-toolbar {
+  margin-bottom: var(--space-3);
+}
+
+.search-field {
+  margin: 0;
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.sort-field {
+  margin: 0;
+  flex: 0 1 12rem;
+  min-width: 0;
+}
+
+.customers-card .table-wrap {
+  overflow-x: auto;
+  margin-inline: -0.15rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.customers-table {
+  width: 100%;
+  min-width: 0;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  table-layout: fixed;
+}
+
+.customers-table th,
+.customers-table td {
+  text-align: start;
+  vertical-align: middle;
+  padding: 0.55rem 0.45rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customers-table th {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.customers-table .col-num {
+  width: 2.4rem;
+}
+
+.customers-table .col-name {
+  width: 11%;
+}
+
+.customers-table .col-phone {
+  width: 10%;
+}
+
+.customers-table .col-age {
+  width: 3.5rem;
+}
+
+.customers-table .col-date {
+  width: 11%;
+}
+
+.customers-table .col-time {
+  width: 6.5%;
+}
+
+.customers-table .col-services {
+  width: 16%;
+}
+
+.customers-table .col-duration {
+  width: 7%;
+}
+
+.customers-table .col-status {
+  width: 9rem;
+}
+
+.customers-table .col-actions {
+  width: 7.5rem;
+}
+
+.customers-table .status-select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.25rem 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.customers-table .status-select.badge--pending {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #c2410c;
+}
+
+.customers-table .status-select.badge--confirmed {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #047857;
+}
+
+.customers-table .status-select.badge--attended {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.customers-table .status-select.badge--noshow {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.customers-table th:last-child,
+.customers-table td:last-child {
+  text-align: center;
+  overflow: visible;
+  white-space: normal;
+}
+
+.customers-table .row-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+}
+
+.customers-table .row-actions .btn {
+  min-width: 1.85rem;
+  min-height: 1.85rem;
+  padding: 0.2rem 0.3rem;
+  font-size: 0.85rem;
+}
+
+.customers-table .badge {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.45rem;
+}
+
+.services-cell {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.no-next {
+  color: var(--text-secondary);
+  white-space: normal !important;
+}
+
+.no-next__text {
+  display: inline-block;
+  margin-inline-end: 0.5rem;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.customers-row--today td {
+  background: color-mix(in srgb, var(--primary-light) 45%, transparent);
+}
+
+@media (max-width: 64rem) and (min-width: 48.01rem) {
+  .customers-table {
+    table-layout: auto;
+    min-width: 52rem;
+  }
+}
+
+@media (max-width: 48rem) {
+  .search-field,
+  .sort-field {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .customers-card .table-wrap {
+    overflow: visible;
+  }
+
+  .customers-table {
+    table-layout: auto;
+    min-width: 0;
+  }
+
+  .customers-table .col-num-cell {
+    display: none;
+  }
+
+  .customers-table tr {
+    padding: 1rem;
+  }
+
+  .customers-row--today td {
+    background: transparent;
+  }
+
+  .customers-row--today {
+    border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+    background: color-mix(in srgb, var(--primary-light) 35%, #fff);
+  }
+
+  .customers-table td {
+    white-space: normal;
+    overflow: visible;
+  }
+
+  .customers-table th:last-child,
+  .customers-table td:last-child {
+    text-align: start;
+  }
+
+  .customers-table .row-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: var(--space-2);
+  }
+
+  .customers-table .row-actions .btn {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+  }
+
+  .customers-table .status-select {
+    width: 100%;
+    padding: 0.55rem 0.65rem;
+    font-size: 0.85rem;
+  }
+
+  .services-cell {
+    max-width: none;
+    white-space: normal;
+  }
+
+  .no-next {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+}

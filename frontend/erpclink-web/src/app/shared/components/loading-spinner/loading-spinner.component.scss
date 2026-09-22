@@ -1,0 +1,40 @@
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-primary);
+}
+
+.spinner__ring {
+  display: inline-block;
+  border: 2px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+.spinner--sm .spinner__ring {
+  width: 1rem;
+  height: 1rem;
+}
+
+.spinner--md .spinner__ring {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.spinner--lg .spinner__ring {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.spinner__label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

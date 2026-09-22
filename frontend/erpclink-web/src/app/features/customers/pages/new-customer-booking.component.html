@@ -1,0 +1,313 @@
+<app-page-header
+  [title]="'حجز جلسة جديدة'"
+  [subtitle]="'عميلة ← مناطق ← تاريخ ← موعد متاح ← تأكيد — من صفحة واحدة'"
+>
+  <a actions class="btn btn--ghost" routerLink="/app/customers">إلغاء</a>
+</app-page-header>
+
+<div class="booking-layout">
+  <div class="booking-main">
+    <section class="card booking-card" id="booking-customer-section">
+      <h2 class="booking-card__title">معلومات العميلة</h2>
+      <p class="text-muted booking-hint">الاسم ورقم الهاتف مطلوبان قبل تأكيد الحجز.</p>
+      <div class="mode-toggle" role="tablist" aria-label="نوع العميلة">
+        <button
+          type="button"
+          class="mode-toggle__btn"
+          [class.mode-toggle__btn--active]="mode() === 'existing'"
+          (click)="setMode('existing')"
+        >
+          عميلة موجودة
+        </button>
+        <button
+          type="button"
+          class="mode-toggle__btn"
+          [class.mode-toggle__btn--active]="mode() === 'new'"
+          (click)="setMode('new')"
+        >
+          + إضافة عميلة جديدة
+        </button>
+      </div>
+
+      @if (mode() === 'existing') {
+        <label class="form-field">
+          <span class="form-field__label">بحث بالاسم أو الهاتف</span>
+          <input
+            class="form-field__input"
+            type="search"
+            [formControl]="existingQuery"
+            placeholder="ابحثي عن عميلة…"
+          />
+        </label>
+        @if (searchingCustomers()) {
+          <app-loading-spinner label="جاري البحث…" />
+        } @else if (existingMatches().length) {
+          <div class="existing-list">
+            @for (c of existingMatches(); track c.id) {
+              <button
+                type="button"
+                class="existing-item"
+                [class.existing-item--selected]="selectedExisting()?.id === c.id"
+                (click)="selectExisting(c)"
+              >
+                <strong>{{ c.fullName }}</strong>
+                <span class="text-muted">{{ c.phoneNumber }}</span>
+              </button>
+            }
+          </div>
+        }
+      }
+
+      <div class="form-grid" [formGroup]="customerForm">
+        <label class="form-field">
+          <span class="form-field__label">الاسم</span>
+          <input
+            class="form-field__input"
+            formControlName="fullName"
+            placeholder="سارة محمد"
+          />
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">رقم الهاتف</span>
+          <input
+            class="form-field__input"
+            formControlName="phoneNumber"
+            placeholder="01012345678"
+          />
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">العمر</span>
+          <input class="form-field__input" type="number" formControlName="age" placeholder="25" />
+        </label>
+        <label class="form-field form-field--wide">
+          <span class="form-field__label">الملاحظات</span>
+          <textarea
+            class="form-field__textarea"
+            formControlName="notes"
+            rows="2"
+            placeholder="ملاحظات عامة عن العميلة…"
+          ></textarea>
+        </label>
+      </div>
+      @if (mode() === 'existing' && selectedExisting()) {
+        <p class="text-muted booking-hint" style="margin-top: 0">
+          يمكنك تعديل بيانات العميلة هنا — تُحفظ مع تأكيد الحجز.
+        </p>
+      }
+    </section>
+
+    <section class="card booking-card">
+      <h2 class="booking-card__title">اختر المناطق المطلوبة</h2>
+      <p class="text-muted booking-hint">اختاري منطقة أو أكثر — المدة تُحسب من الخادم عند اختيار التاريخ.</p>
+      @if (loadingServices()) {
+        <app-loading-spinner label="جاري تحميل المناطق…" />
+      } @else {
+        <div class="service-grid">
+          @for (s of services(); track s.id) {
+            <button
+              type="button"
+              class="service-chip"
+              [class.service-chip--selected]="isSelected(s.id)"
+              (click)="toggleService(s.id)"
+            >
+              @if (isSelected(s.id)) {
+                <span class="service-chip__check" aria-hidden="true">✓</span>
+              }
+              <span class="service-chip__icon" aria-hidden="true">♡</span>
+              <span class="service-chip__name">{{ s.name }}</span>
+              <span class="service-chip__duration">{{ durationLabel(s) }}</span>
+            </button>
+          }
+        </div>
+        @if (selectedPulseServices().length) {
+          <div class="pulse-duration-box">
+            @for (s of selectedPulseServices(); track s.id) {
+              <label class="form-field pulse-duration-field">
+                <span class="form-field__label">مدة «{{ s.name }}» بالدقائق</span>
+                <input
+                  class="form-field__input"
+                  type="number"
+                  min="1"
+                  max="480"
+                  inputmode="numeric"
+                  placeholder="مثال: 30"
+                  [value]="pulseDurationValue(s.id)"
+                  (input)="setPulseDuration(s.id, $any($event.target).value)"
+                />
+              </label>
+            }
+            <p class="pulse-duration-hint text-muted">
+              عدد النبضات المستهلكة يُسجَّل لاحقاً من ملف العميلة بعد انتهاء الجلسة.
+            </p>
+          </div>
+        }
+        <div class="duration-summary">
+          <span class="duration-summary__label">مدة الجلسة المتوقعة</span>
+          <span class="duration-summary__value">
+            @if (sessionDuration() > 0) {
+              {{ sessionDuration() }} دقيقة
+            } @else if (selectedPulseServices().length && !pulseDurationsReady()) {
+              أدخلي مدة النبضات
+            } @else {
+              —
+            }
+          </span>
+        </div>
+      }
+    </section>
+
+    <section class="card booking-card" [formGroup]="appointmentForm">
+      <h2 class="booking-card__title">اختر التاريخ</h2>
+      <div class="date-row">
+        <label class="form-field" style="margin: 0; max-width: 16rem">
+          <span class="form-field__label">تاريخ الموعد</span>
+          <input class="form-field__input" type="date" formControlName="date" [min]="minDate" />
+        </label>
+        @if (isToday()) {
+          <span class="badge badge--time">اليوم · {{ formatDateAr(appointmentForm.controls.date.value) }}</span>
+        } @else if (appointmentForm.controls.date.value) {
+          <span class="text-muted">{{ formatDateAr(appointmentForm.controls.date.value) }}</span>
+        }
+      </div>
+      <label class="form-field form-field--wide" style="margin-top: var(--space-4)">
+        <span class="form-field__label">ملاحظات الحجز</span>
+        <textarea
+          class="form-field__textarea"
+          formControlName="notes"
+          rows="2"
+          placeholder="ملاحظات الاستقبال أو الجلسة…"
+        ></textarea>
+      </label>
+    </section>
+
+    <section class="card booking-card">
+      <div class="slots-head">
+        <h2 class="booking-card__title" style="margin: 0">المواعيد المتاحة</h2>
+        <div class="slots-legend">
+          <span>🟢 متاح</span>
+          <span>🔴 محجوز</span>
+          <span>⚪ غير متاح</span>
+          <span>🌸 محدد</span>
+        </div>
+      </div>
+
+      @if (!selectedServiceIds().length) {
+        <p class="text-muted">اختاري المناطق أولاً لعرض المواعيد.</p>
+      } @else if (!pulseDurationsReady()) {
+        <p class="text-muted">أدخلي مدة النبضات أولاً لعرض المواعيد.</p>
+      } @else if (loadingAvailability()) {
+        <app-loading-spinner label="جاري حساب التوفر من الحجوزات الحقيقية…" />
+      } @else if (timelineSlots().length === 0) {
+        <p class="text-muted">لا توجد فترات ضمن مواعيد العمل لهذا اليوم.</p>
+      } @else {
+        <div class="day-slot-grid">
+          @for (slot of timelineSlots(); track slot.startTime) {
+            <button
+              type="button"
+              [class]="slotClass(slot)"
+              [disabled]="slot.status !== SlotStatus.Available"
+              (click)="selectSlot(slot)"
+            >
+              <span class="day-slot__time">{{ formatTimeAr(slot.startTime) }}</span>
+              @if (slot.status === SlotStatus.Available) {
+                <span class="day-slot__meta">متاح · {{ slot.durationMinutes }} د</span>
+              } @else if (slot.status === SlotStatus.Booked) {
+                <span class="day-slot__meta">محجوز</span>
+                @if (slot.customerName) {
+                  <span class="day-slot__detail">{{ slot.customerName }}</span>
+                }
+                @if (slot.serviceNames) {
+                  <span class="day-slot__detail">{{ slot.serviceNames }}</span>
+                }
+                @if (slot.bookedDurationMinutes) {
+                  <span class="day-slot__detail">{{ slot.bookedDurationMinutes }} دقيقة</span>
+                }
+              } @else {
+                <span class="day-slot__meta">غير متاح</span>
+              }
+            </button>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  <aside class="booking-summary card">
+    <h2 class="booking-card__title">ملخص الموعد</h2>
+    <dl class="summary-list">
+      <div>
+        <dt>العميلة</dt>
+        <dd>{{ summaryName() }}</dd>
+      </div>
+      <div>
+        <dt>التاريخ</dt>
+        <dd>
+          @if (isToday()) {
+            اليوم ·
+          }
+          {{ formatDateAr(appointmentForm.controls.date.value) }}
+        </dd>
+      </div>
+      <div>
+        <dt>وقت البداية</dt>
+        <dd>
+          @if (selectedSlot(); as s) {
+            {{ formatTimeAr(s.startTime) }}
+          } @else {
+            —
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>مدة الجلسة</dt>
+        <dd>
+          @if (sessionDuration() > 0) {
+            {{ sessionDuration() }} دقيقة
+          } @else {
+            —
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>وقت النهاية</dt>
+        <dd>{{ endTimeDisplay() }}</dd>
+      </div>
+      <div>
+        <dt>المناطق</dt>
+        <dd>
+          @if (selectedServices().length) {
+            <div class="area-pill-list">
+              @for (s of selectedServices(); track s.id) {
+                <span class="area-pill">{{ s.name }}</span>
+              }
+            </div>
+          } @else {
+            —
+          }
+        </dd>
+      </div>
+      <div>
+        <dt>الحالة</dt>
+        <dd>
+          <select class="form-field__select status-select" [formControl]="appointmentForm.controls.status">
+            @for (s of editableStatuses; track s) {
+              <option [value]="s">{{ statusLabels[s] }}</option>
+            }
+          </select>
+        </dd>
+      </div>
+    </dl>
+
+    <div class="summary-actions">
+      <a class="btn btn--ghost" routerLink="/app/customers">إلغاء</a>
+      <button
+        type="button"
+        class="btn btn--primary"
+        [disabled]="submitting() || !selectedSlot()"
+        (click)="submit()"
+      >
+        {{ submitting() ? 'جاري الحفظ…' : 'تأكيد الحجز' }}
+      </button>
+    </div>
+  </aside>
+</div>

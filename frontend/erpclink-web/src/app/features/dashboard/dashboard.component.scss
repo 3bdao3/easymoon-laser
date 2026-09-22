@@ -1,0 +1,94 @@
+.dash {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.dash__hello {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.dash__hello-text {
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.dash__title {
+  margin: 0;
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.dash__subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.dash__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.dash__date {
+  margin: 0;
+  min-width: 10rem;
+}
+
+.dash__today-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.pulse-stats {
+  margin-top: calc(var(--space-2) * -1);
+}
+
+.stat-card--pulse .stat-card__value {
+  color: var(--color-primary, #c45b7a);
+}
+
+@media (max-width: 48rem) {
+  .dash {
+    gap: var(--space-4);
+  }
+
+  .dash__hello {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dash__title {
+    font-size: var(--text-2xl);
+  }
+
+  .dash__actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dash__date {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dash__book {
+    width: 100%;
+    justify-content: center;
+  }
+}

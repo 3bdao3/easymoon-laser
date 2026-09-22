@@ -1,0 +1,26 @@
+<header class="topbar">
+  <div class="topbar__start">
+    <button type="button" class="topbar__menu btn btn--ghost" (click)="toggleMenu()" aria-label="فتح القائمة">
+      ☰
+    </button>
+  </div>
+
+  <div class="topbar__end">
+    @if (loading.isLoading()) {
+      <app-loading-spinner size="sm" label="" />
+    }
+    <button type="button" class="topbar__bell" aria-label="الإشعارات" disabled>
+      <span aria-hidden="true">🔔</span>
+    </button>
+    @if (user(); as u) {
+      <div class="topbar__profile">
+        <div class="topbar__avatar" aria-hidden="true">{{ initials(u.fullName) }}</div>
+        <div class="topbar__user">
+          <span class="topbar__user-name">{{ u.fullName }}</span>
+          <span class="topbar__user-email">موظفة العيادة</span>
+        </div>
+      </div>
+    }
+    <button type="button" class="btn btn--ghost btn--sm" (click)="logout()">خروج</button>
+  </div>
+</header>

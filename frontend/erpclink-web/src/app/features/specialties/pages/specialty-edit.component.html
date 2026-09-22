@@ -1,0 +1,19 @@
+<app-page-header [title]="'تعديل تخصص'" [subtitle]="code()">
+  <a actions class="btn btn--ghost" routerLink="../..">رجوع</a>
+</app-page-header>
+<div class="card">
+  @if (loading()) {
+    <app-loading-spinner />
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="form-grid">
+        <label class="form-field"><span class="form-field__label">الاسم *</span><input class="form-field__input" formControlName="name" /></label>
+        <label class="form-field"><span class="form-field__label">الوصف</span><input class="form-field__input" formControlName="description" /></label>
+      </div>
+      <div class="row-actions">
+        <a class="btn btn--ghost" routerLink="../..">إلغاء</a>
+        <button class="btn btn--primary" type="submit" [disabled]="submitting()">حفظ</button>
+      </div>
+    </form>
+  }
+</div>

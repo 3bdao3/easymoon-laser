@@ -1,0 +1,67 @@
+<app-page-header title="أوامر الشراء" subtitle="مسودات وموافقات أوامر الشراء">
+  <a
+    actions
+    class="btn btn--primary"
+    routerLink="/app/procurement/purchase-orders/new"
+    *appHasPermission="permissions.ProcurementPurchaseOrdersCreate">
+    أمر شراء جديد
+  </a>
+</app-page-header>
+
+<section class="feature-page">
+  <form class="card filters" [formGroup]="filters" (ngSubmit)="search()">
+    <div class="field">
+      <label class="field__label" for="po">رقم الأمر</label>
+      <input id="po" class="field__input" formControlName="purchaseOrderNumber" />
+    </div>
+    <div class="field">
+      <label class="field__label" for="status">الحالة</label>
+      <select id="status" class="field__input" formControlName="status">
+        <option value="">الكل</option>
+        <option value="Draft">مسودة</option>
+        <option value="Submitted">مُرسل</option>
+        <option value="Approved">معتمد</option>
+        <option value="Cancelled">ملغى</option>
+      </select>
+    </div>
+    <div class="filters__actions">
+      <button type="submit" class="btn btn--primary">بحث</button>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <app-loading-spinner />
+  } @else if (result()) {
+    @let page = result()!;
+    @if (page.items.length === 0) {
+      <app-empty-state title="لا توجد أوامر شراء" />
+    } @else {
+      <div class="card data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>الرقم</th>
+              <th>التاريخ</th>
+              <th>الحالة</th>
+              <th>الإجمالي</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of page.items; track trackById($index, row)) {
+              <tr>
+                <td>{{ row.purchaseOrderNumber }}</td>
+                <td>{{ row.orderDate }}</td>
+                <td>{{ row.status }}</td>
+                <td>{{ row.totalAmount | number: '1.2-2' }} {{ row.currencyCode }}</td>
+                <td>
+                  <a [routerLink]="['/app/procurement/purchase-orders', row.id]">عرض</a>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</section>

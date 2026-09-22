@@ -1,0 +1,235 @@
+@if (loading()) {
+  <app-loading-spinner label="جاري التحميل…" />
+} @else {
+  @if (customer(); as c) {
+    <app-page-header [title]="c.fullName" [subtitle]="c.phoneNumber">
+      <a
+        actions
+        class="btn btn--primary"
+        [routerLink]="['/app/book']"
+        [queryParams]="{ customerId: c.id }"
+        *appHasPermission="permissions.LaserAppointmentsCreate"
+      >
+        حجز موعد
+      </a>
+      <a
+        actions
+        class="btn btn--ghost"
+        [routerLink]="['/app/customers', c.id, 'edit']"
+        *appHasPermission="permissions.LaserCustomersUpdate"
+      >
+        تعديل
+      </a>
+      <a actions class="btn btn--ghost" routerLink="/app/customers">رجوع</a>
+    </app-page-header>
+
+    <section class="card">
+      <div class="detail-head">
+        <h2 class="card__title" style="margin: 0">بيانات العميلة</h2>
+        <a
+          class="btn btn--primary btn--sm"
+          [routerLink]="['/app/customers', c.id, 'edit']"
+          *appHasPermission="permissions.LaserCustomersUpdate"
+        >
+          تعديل كل البيانات
+        </a>
+      </div>
+      <div class="detail-grid">
+        <div>
+          <div class="detail-item__label">الاسم</div>
+          <div class="detail-item__value">{{ c.fullName }}</div>
+        </div>
+        <div>
+          <div class="detail-item__label">الهاتف</div>
+          <div class="detail-item__value">{{ c.phoneNumber }}</div>
+        </div>
+        <div>
+          <div class="detail-item__label">العمر</div>
+          <div class="detail-item__value">{{ c.age ?? '—' }}</div>
+        </div>
+        <div>
+          <div class="detail-item__label">الحالة</div>
+          <div class="detail-item__value">{{ c.isActive ? 'نشطة' : 'موقوفة' }}</div>
+        </div>
+      </div>
+      @if (c.notes) {
+        <p class="text-muted" style="margin-top: var(--space-4)">{{ c.notes }}</p>
+      }
+    </section>
+
+    <section class="card pulse-balance-card">
+      <h2 class="card__title">المتبقي للعميلة</h2>
+      @if (pulseBalance(); as pulse) {
+        @if (pulse.packageTotal != null) {
+          <div class="detail-grid remaining-hero">
+            <div>
+              <div class="detail-item__label">متبقي النبضات</div>
+              <div class="detail-item__value pulse-remaining">
+                {{ pulse.remaining ?? 0 }}
+                <span class="text-muted remaining-of">/ {{ pulse.packageTotal }}</span>
+              </div>
+            </div>
+            <div>
+              <div class="detail-item__label">متبقي الفلوس</div>
+              <div class="detail-item__value pulse-remaining">
+                @if (pulse.packagePriceTotal != null) {
+                  {{ pulse.remainingAmount ?? 0 }}
+                  <span class="text-muted remaining-of">/ {{ pulse.packagePriceTotal }}</span>
+                } @else {
+                  —
+                }
+              </div>
+            </div>
+            <div>
+              <div class="detail-item__label">متبقي الوقت</div>
+              <div class="detail-item__value pulse-remaining">
+                @if (pulse.packageDurationTotalMinutes != null) {
+                  {{ pulse.remainingDurationMinutes ?? 0 }} د
+                  <span class="text-muted remaining-of">/ {{ pulse.packageDurationTotalMinutes }} د</span>
+                } @else {
+                  —
+                }
+              </div>
+            </div>
+          </div>
+          <div class="detail-grid" style="margin-top: var(--space-4)">
+            <div>
+              <div class="detail-item__label">مستهلك نبضات</div>
+              <div class="detail-item__value">{{ pulse.consumed }}</div>
+            </div>
+            <div>
+              <div class="detail-item__label">مدفوع</div>
+              <div class="detail-item__value">{{ pulse.amountPaid ?? 0 }}</div>
+            </div>
+            <div>
+              <div class="detail-item__label">وقت مستخدم</div>
+              <div class="detail-item__value">{{ pulse.durationUsedMinutes ?? 0 }} د</div>
+            </div>
+          </div>
+        } @else {
+          <p class="text-muted">لا يوجد باكدج نشط لهذه العميلة.</p>
+        }
+      } @else {
+        <p class="text-muted">لا يوجد باكدج نشط لهذه العميلة.</p>
+      }
+    </section>
+
+    @if (history(); as h) {
+      <section class="card next-appt-card">
+        <h2 class="card__title">الموعد القادم</h2>
+        @if (nextAppointment(); as next) {
+          <div class="detail-grid">
+            <div>
+              <div class="detail-item__label">التاريخ</div>
+              <div class="detail-item__value">
+                @if (dayHint(next.appointmentDate); as hint) {
+                  <span class="next-hint">{{ hint }}</span>
+                }
+                {{ formatDateAr(next.appointmentDate) }}
+              </div>
+            </div>
+            <div>
+              <div class="detail-item__label">الوقت</div>
+              <div class="detail-item__value">{{ formatTimeAr(next.startTime) }}</div>
+            </div>
+            <div>
+              <div class="detail-item__label">الخدمات</div>
+              <div class="detail-item__value">{{ serviceNames(next) }}</div>
+            </div>
+            <div>
+              <div class="detail-item__label">مدة الموعد</div>
+              <div class="detail-item__value">{{ next.durationMinutes }} دقيقة</div>
+            </div>
+            @if (pulseBalance(); as pulse) {
+              @if (pulse.packageTotal != null) {
+                <div>
+                  <div class="detail-item__label">متبقي النبضات</div>
+                  <div class="detail-item__value pulse-remaining">{{ pulse.remaining ?? 0 }}</div>
+                </div>
+                <div>
+                  <div class="detail-item__label">متبقي الفلوس</div>
+                  <div class="detail-item__value pulse-remaining">
+                    {{ pulse.packagePriceTotal != null ? (pulse.remainingAmount ?? 0) : '—' }}
+                  </div>
+                </div>
+                <div>
+                  <div class="detail-item__label">متبقي الوقت</div>
+                  <div class="detail-item__value pulse-remaining">
+                    {{ pulse.packageDurationTotalMinutes != null ? (pulse.remainingDurationMinutes ?? 0) + ' د' : '—' }}
+                  </div>
+                </div>
+              }
+            }
+            <div>
+              <div class="detail-item__label">الحالة</div>
+              <div class="detail-item__value">
+                <select
+                  class="form-field__select status-select"
+                  [value]="next.status"
+                  [disabled]="updatingStatus()"
+                  (change)="onNextStatusChange(next, $any($event.target).value)"
+                >
+                  @for (s of editableStatuses; track s) {
+                    <option [value]="s">{{ statusLabel(s) }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <p class="text-muted">لا يوجد موعد قادم.</p>
+          <a
+            class="btn btn--primary btn--sm"
+            [routerLink]="['/app/book']"
+            [queryParams]="{ customerId: c.id }"
+            *appHasPermission="permissions.LaserAppointmentsCreate"
+          >
+            حجز موعد
+          </a>
+        }
+      </section>
+
+      <section class="card">
+        <h2 class="card__title">سجل المواعيد</h2>
+        @if (pastAppointments().length === 0) {
+          <p class="text-muted">لا يوجد سجل سابق.</p>
+        } @else {
+          <div class="table-wrap">
+            <table class="table table-cards">
+              <thead>
+                <tr>
+                  <th>التاريخ</th>
+                  <th>الوقت</th>
+                  <th>الخدمات</th>
+                  <th>المدة</th>
+                  <th>نبضات الجلسة</th>
+                  <th>الحالة</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (a of pastAppointments(); track a.id) {
+                  <tr>
+                    <td data-label="التاريخ">{{ formatDateAr(a.appointmentDate) }}</td>
+                    <td data-label="الوقت">{{ formatTimeAr(a.startTime) }}</td>
+                    <td data-label="الخدمات">{{ serviceNames(a) }}</td>
+                    <td data-label="المدة">{{ a.durationMinutes }} دقيقة</td>
+                    <td data-label="نبضات الجلسة">
+                      @if (appointmentPulsesConsumed(a); as pulses) {
+                        {{ pulses }}
+                      } @else {
+                        —
+                      }
+                    </td>
+                    <td data-label="الحالة">
+                      <span class="badge" [class]="badgeClass(a.status)">{{ statusLabel(a.status) }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+  }
+}

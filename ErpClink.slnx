@@ -1,0 +1,110 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/ErpClink.BuildingBlocks.Application/ErpClink.BuildingBlocks.Application.csproj" />
+    <Project Path="src/BuildingBlocks/ErpClink.BuildingBlocks.AspNetCore/ErpClink.BuildingBlocks.AspNetCore.csproj" />
+    <Project Path="src/BuildingBlocks/ErpClink.BuildingBlocks.Domain/ErpClink.BuildingBlocks.Domain.csproj" />
+    <Project Path="src/BuildingBlocks/ErpClink.BuildingBlocks.Infrastructure/ErpClink.BuildingBlocks.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/ErpClink.Api/ErpClink.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Administration/">
+    <Project Path="src/Modules/Administration/ErpClink.Modules.Administration.Application/ErpClink.Modules.Administration.Application.csproj" />
+    <Project Path="src/Modules/Administration/ErpClink.Modules.Administration.Domain/ErpClink.Modules.Administration.Domain.csproj" />
+    <Project Path="src/Modules/Administration/ErpClink.Modules.Administration.Infrastructure/ErpClink.Modules.Administration.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Appointments/">
+    <Project Path="src/Modules/Appointments/ErpClink.Modules.Appointments.Application/ErpClink.Modules.Appointments.Application.csproj" />
+    <Project Path="src/Modules/Appointments/ErpClink.Modules.Appointments.Domain/ErpClink.Modules.Appointments.Domain.csproj" />
+    <Project Path="src/Modules/Appointments/ErpClink.Modules.Appointments.Infrastructure/ErpClink.Modules.Appointments.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Doctors/">
+    <Project Path="src/Modules/Doctors/ErpClink.Modules.Doctors.Application/ErpClink.Modules.Doctors.Application.csproj" />
+    <Project Path="src/Modules/Doctors/ErpClink.Modules.Doctors.Domain/ErpClink.Modules.Doctors.Domain.csproj" />
+    <Project Path="src/Modules/Doctors/ErpClink.Modules.Doctors.Infrastructure/ErpClink.Modules.Doctors.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Scheduling/">
+    <Project Path="src/Modules/Scheduling/ErpClink.Modules.Scheduling.Application/ErpClink.Modules.Scheduling.Application.csproj" />
+    <Project Path="src/Modules/Scheduling/ErpClink.Modules.Scheduling.Domain/ErpClink.Modules.Scheduling.Domain.csproj" />
+    <Project Path="src/Modules/Scheduling/ErpClink.Modules.Scheduling.Infrastructure/ErpClink.Modules.Scheduling.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Queue/">
+    <Project Path="src/Modules/Queue/ErpClink.Modules.Queue.Application/ErpClink.Modules.Queue.Application.csproj" />
+    <Project Path="src/Modules/Queue/ErpClink.Modules.Queue.Domain/ErpClink.Modules.Queue.Domain.csproj" />
+    <Project Path="src/Modules/Queue/ErpClink.Modules.Queue.Infrastructure/ErpClink.Modules.Queue.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/LaserClinic/">
+    <Project Path="src/Modules/LaserClinic/ErpClink.Modules.LaserClinic.Application/ErpClink.Modules.LaserClinic.Application.csproj" />
+    <Project Path="src/Modules/LaserClinic/ErpClink.Modules.LaserClinic.Domain/ErpClink.Modules.LaserClinic.Domain.csproj" />
+    <Project Path="src/Modules/LaserClinic/ErpClink.Modules.LaserClinic.Infrastructure/ErpClink.Modules.LaserClinic.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/MedicalVisits/">
+    <Project Path="src/Modules/MedicalVisits/ErpClink.Modules.MedicalVisits.Application/ErpClink.Modules.MedicalVisits.Application.csproj" />
+    <Project Path="src/Modules/MedicalVisits/ErpClink.Modules.MedicalVisits.Domain/ErpClink.Modules.MedicalVisits.Domain.csproj" />
+    <Project Path="src/Modules/MedicalVisits/ErpClink.Modules.MedicalVisits.Infrastructure/ErpClink.Modules.MedicalVisits.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Prescriptions/">
+    <Project Path="src/Modules/Prescriptions/ErpClink.Modules.Prescriptions.Application/ErpClink.Modules.Prescriptions.Application.csproj" />
+    <Project Path="src/Modules/Prescriptions/ErpClink.Modules.Prescriptions.Domain/ErpClink.Modules.Prescriptions.Domain.csproj" />
+    <Project Path="src/Modules/Prescriptions/ErpClink.Modules.Prescriptions.Infrastructure/ErpClink.Modules.Prescriptions.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Services/">
+    <Project Path="src/Modules/Services/ErpClink.Modules.Services.Application/ErpClink.Modules.Services.Application.csproj" />
+    <Project Path="src/Modules/Services/ErpClink.Modules.Services.Domain/ErpClink.Modules.Services.Domain.csproj" />
+    <Project Path="src/Modules/Services/ErpClink.Modules.Services.Infrastructure/ErpClink.Modules.Services.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Billing/">
+    <Project Path="src/Modules/Billing/ErpClink.Modules.Billing.Application/ErpClink.Modules.Billing.Application.csproj" />
+    <Project Path="src/Modules/Billing/ErpClink.Modules.Billing.Domain/ErpClink.Modules.Billing.Domain.csproj" />
+    <Project Path="src/Modules/Billing/ErpClink.Modules.Billing.Infrastructure/ErpClink.Modules.Billing.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Procurement/">
+    <Project Path="src/Modules/Procurement/ErpClink.Modules.Procurement.Application/ErpClink.Modules.Procurement.Application.csproj" />
+    <Project Path="src/Modules/Procurement/ErpClink.Modules.Procurement.Domain/ErpClink.Modules.Procurement.Domain.csproj" />
+    <Project Path="src/Modules/Procurement/ErpClink.Modules.Procurement.Infrastructure/ErpClink.Modules.Procurement.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Inventory/">
+    <Project Path="src/Modules/Inventory/ErpClink.Modules.Inventory.Application/ErpClink.Modules.Inventory.Application.csproj" />
+    <Project Path="src/Modules/Inventory/ErpClink.Modules.Inventory.Domain/ErpClink.Modules.Inventory.Domain.csproj" />
+    <Project Path="src/Modules/Inventory/ErpClink.Modules.Inventory.Infrastructure/ErpClink.Modules.Inventory.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Assets/">
+    <Project Path="src/Modules/Assets/ErpClink.Modules.Assets.Application/ErpClink.Modules.Assets.Application.csproj" />
+    <Project Path="src/Modules/Assets/ErpClink.Modules.Assets.Domain/ErpClink.Modules.Assets.Domain.csproj" />
+    <Project Path="src/Modules/Assets/ErpClink.Modules.Assets.Infrastructure/ErpClink.Modules.Assets.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Finance/">
+    <Project Path="src/Modules/Finance/ErpClink.Modules.Finance.Application/ErpClink.Modules.Finance.Application.csproj" />
+    <Project Path="src/Modules/Finance/ErpClink.Modules.Finance.Domain/ErpClink.Modules.Finance.Domain.csproj" />
+    <Project Path="src/Modules/Finance/ErpClink.Modules.Finance.Infrastructure/ErpClink.Modules.Finance.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Reports/">
+    <Project Path="src/Modules/Reports/ErpClink.Modules.Reports.Application/ErpClink.Modules.Reports.Application.csproj" />
+    <Project Path="src/Modules/Reports/ErpClink.Modules.Reports.Infrastructure/ErpClink.Modules.Reports.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/Patients/">
+    <Project Path="src/Modules/Patients/ErpClink.Modules.Patients.Application/ErpClink.Modules.Patients.Application.csproj" />
+    <Project Path="src/Modules/Patients/ErpClink.Modules.Patients.Domain/ErpClink.Modules.Patients.Domain.csproj" />
+    <Project Path="src/Modules/Patients/ErpClink.Modules.Patients.Infrastructure/ErpClink.Modules.Patients.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ErpClink.Api.Tests/ErpClink.Api.Tests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Appointments.UnitTests/ErpClink.Modules.Appointments.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Administration.UnitTests/ErpClink.Modules.Administration.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Doctors.UnitTests/ErpClink.Modules.Doctors.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Patients.UnitTests/ErpClink.Modules.Patients.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Queue.UnitTests/ErpClink.Modules.Queue.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.LaserClinic.UnitTests/ErpClink.Modules.LaserClinic.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.MedicalVisits.UnitTests/ErpClink.Modules.MedicalVisits.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Prescriptions.UnitTests/ErpClink.Modules.Prescriptions.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Services.UnitTests/ErpClink.Modules.Services.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Billing.UnitTests/ErpClink.Modules.Billing.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Procurement.UnitTests/ErpClink.Modules.Procurement.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Inventory.UnitTests/ErpClink.Modules.Inventory.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Assets.UnitTests/ErpClink.Modules.Assets.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Finance.UnitTests/ErpClink.Modules.Finance.UnitTests.csproj" />
+    <Project Path="tests/ErpClink.Modules.Scheduling.UnitTests/ErpClink.Modules.Scheduling.UnitTests.csproj" />
+  </Folder>
+</Solution>

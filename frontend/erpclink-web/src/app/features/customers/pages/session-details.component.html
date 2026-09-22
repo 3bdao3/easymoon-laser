@@ -1,0 +1,132 @@
+@if (loading()) {
+  <app-loading-spinner label="جاري تحميل الجلسة…" />
+} @else if (appointment(); as appt) {
+  <app-page-header
+    [title]="'تفاصيل الجلسة'"
+    [subtitle]="appt.customerName + ' · ' + formatDateAr(appt.appointmentDate)"
+  >
+    @if (customerId(); as cid) {
+      <a actions class="btn btn--ghost" [routerLink]="['/app/customers', cid, 'edit']">رجوع للعميلة</a>
+    }
+  </app-page-header>
+
+  <div class="session-layout">
+    <section class="card">
+      <h2 class="card__title">بيانات الجلسة</h2>
+      <div class="detail-grid">
+        <div>
+          <div class="detail-item__label">العميلة</div>
+          <div class="detail-item__value">{{ appt.customerName }}</div>
+        </div>
+        <div>
+          <div class="detail-item__label">الهاتف</div>
+          <div class="detail-item__value">{{ appt.customerPhone }}</div>
+        </div>
+        <div>
+          <div class="detail-item__label">التاريخ</div>
+          <div class="detail-item__value">{{ formatDateAr(appt.appointmentDate) }}</div>
+        </div>
+        <div>
+          <div class="detail-item__label">البداية</div>
+          <div class="detail-item__value">{{ formatTimeAr(appt.startTime) }}</div>
+        </div>
+        <div>
+          <div class="detail-item__label">الحالة</div>
+          <div class="detail-item__value">{{ statusLabel(appt.status) }}</div>
+        </div>
+        <div>
+          <div class="detail-item__label">الخدمات</div>
+          <div class="detail-item__value">{{ serviceNames(appt) }}</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card package-card">
+      <h2 class="card__title">باكدج النبضات</h2>
+      @if (pulseBalance()?.packageTotal; as total) {
+        <div class="detail-grid">
+          <div>
+            <div class="detail-item__label">إجمالي الباكدج</div>
+            <div class="detail-item__value">{{ total }} نبضة</div>
+          </div>
+          <div>
+            <div class="detail-item__label">المتبقي قبل الحفظ</div>
+            <div class="detail-item__value">{{ remainingBeforeEdit() ?? '—' }} نبضة</div>
+          </div>
+          <div>
+            <div class="detail-item__label">المتبقي بعد الخصم</div>
+            <div
+              class="detail-item__value remaining-after"
+              [class.remaining-after--ok]="(remainingAfter() ?? 0) >= 0"
+              [class.remaining-after--bad]="(remainingAfter() ?? 0) < 0"
+            >
+              @if (remainingAfter() != null) {
+                {{ remainingAfter() }} نبضة
+              } @else {
+                —
+              }
+            </div>
+          </div>
+        </div>
+      } @else {
+        <p class="text-muted">لا يوجد باكدج نشط — سيُفتح عند الحفظ حسب خدمة النبضات.</p>
+      }
+    </section>
+
+    <section class="card" [formGroup]="form">
+      <h2 class="card__title">تسجيل نتيجة الجلسة</h2>
+      <p class="text-muted hub-hint">أدخلي ما تم في هذه الجلسة ثم اضغطي حفظ — يُخصم من الباكدج تلقائياً.</p>
+
+      <div class="form-grid session-form-grid">
+        <label class="form-field">
+          <span class="form-field__label">عدد النبضات المستهلكة</span>
+          <input
+            class="form-field__input"
+            type="number"
+            min="1"
+            max="5000"
+            inputmode="numeric"
+            placeholder="مثال: 2500"
+            formControlName="pulsesConsumed"
+          />
+        </label>
+
+        <label class="form-field">
+          <span class="form-field__label">مدة الجلسة (دقائق)</span>
+          <input
+            class="form-field__input"
+            type="number"
+            min="1"
+            max="480"
+            inputmode="numeric"
+            placeholder="مثال: 30"
+            formControlName="durationMinutes"
+          />
+          <span class="form-field__hint">النهاية المتوقعة: {{ endTimePreview() }}</span>
+        </label>
+
+        <label class="form-field">
+          <span class="form-field__label">المبلغ المدفوع (ج.م)</span>
+          <input
+            class="form-field__input"
+            type="number"
+            min="0"
+            step="0.01"
+            inputmode="decimal"
+            placeholder="مثال: 500"
+            formControlName="amountPaid"
+          />
+        </label>
+      </div>
+
+      <div class="row-actions">
+        <button type="button" class="btn btn--primary" [disabled]="saving()" (click)="save()">
+          {{ saving() ? 'جاري الحفظ…' : 'حفظ' }}
+        </button>
+        @if (customerId(); as cid) {
+          <a class="btn btn--ghost" [routerLink]="['/app/customers', cid, 'edit']">إلغاء</a>
+        }
+      </div>
+    </section>
+  </div>
+}

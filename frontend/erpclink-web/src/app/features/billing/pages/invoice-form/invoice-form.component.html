@@ -1,0 +1,13 @@
+<app-page-header title="فاتورة جديدة" subtitle="Create draft invoice" />
+
+<form [formGroup]="form" (ngSubmit)="submit()" class="stack-form">
+  <label>معرف المريض (GUID)</label>
+  <input formControlName="patientId" />
+  <label>معرف الخدمة (GUID)</label>
+  <input formControlName="serviceId" />
+  <label>الكمية</label>
+  <input type="number" formControlName="quantity" step="0.01" />
+  <label>تاريخ الفاتورة</label>
+  <input type="date" formControlName="invoiceDate" />
+  <button type="submit" class="btn btn-primary" [disabled]="form.invalid">حفظ مسودة</button>
+</form>

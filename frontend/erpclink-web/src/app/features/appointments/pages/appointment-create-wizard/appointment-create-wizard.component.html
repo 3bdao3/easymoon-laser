@@ -1,0 +1,163 @@
+<div class="page">
+  <app-page-header title="حجز موعد" subtitle="Create appointment" />
+
+  <div class="wizard-steps">
+    @for (s of [1, 2, 3, 4, 5, 6]; track s) {
+      <span
+        class="wizard-step"
+        [class.wizard-step--active]="step() === s"
+        [class.wizard-step--done]="step() > s"
+      >
+        {{ stepLabel($any(s)) }}
+      </span>
+    }
+  </div>
+
+  <div class="card">
+    @switch (step()) {
+      @case (1) {
+        <h2 class="card__title">اختر المريض</h2>
+        <div class="filters">
+          <input
+            class="field__input"
+            type="search"
+            placeholder="بحث..."
+            [ngModel]="patientQuery()"
+            (ngModelChange)="patientQuery.set($event)"
+            (keyup.enter)="searchPatients()"
+          />
+          <button class="btn btn--ghost" type="button" (click)="searchPatients()">بحث</button>
+        </div>
+        <ul class="pick-list">
+          @for (p of patientResults(); track p.id) {
+            <li>
+              <button type="button" class="pick-item" (click)="selectedPatient.set(p)">
+                {{ p.fullName }} — {{ p.patientNumber }}
+              </button>
+            </li>
+          }
+        </ul>
+        @if (selectedPatient(); as p) {
+          <p class="text-muted">المختار: {{ p.fullName }}</p>
+        }
+        <div class="page__toolbar">
+          <a class="btn btn--ghost" routerLink="/app/appointments">إلغاء</a>
+          <button class="btn btn--primary" type="button" [disabled]="!selectedPatient()" (click)="nextFromPatient()">
+            التالي
+          </button>
+        </div>
+      }
+      @case (2) {
+        <h2 class="card__title">اختر الطبيب</h2>
+        <div class="filters">
+          <input
+            class="field__input"
+            type="search"
+            [ngModel]="doctorQuery()"
+            (ngModelChange)="doctorQuery.set($event)"
+            (keyup.enter)="searchDoctors()"
+          />
+          <button class="btn btn--ghost" type="button" (click)="searchDoctors()">بحث</button>
+        </div>
+        <ul class="pick-list">
+          @for (d of doctorResults(); track d.id) {
+            <li>
+              <button type="button" class="pick-item" (click)="selectedDoctor.set(d)">
+                {{ d.displayName }}
+              </button>
+            </li>
+          }
+        </ul>
+        <div class="page__toolbar">
+          <button class="btn btn--ghost" type="button" (click)="goTo(1)">رجوع</button>
+          <button class="btn btn--primary" type="button" [disabled]="!selectedDoctor()" (click)="nextFromDoctor()">
+            التالي
+          </button>
+        </div>
+      }
+      @case (3) {
+        <h2 class="card__title">اختر العيادة</h2>
+        <ul class="pick-list">
+          @for (c of clinicResults(); track c.id) {
+            <li>
+              <button type="button" class="pick-item" (click)="selectedClinic.set(c)">
+                {{ c.name }} ({{ c.code }})
+              </button>
+            </li>
+          }
+        </ul>
+        <div class="page__toolbar">
+          <button class="btn btn--ghost" type="button" (click)="goTo(2)">رجوع</button>
+          <button class="btn btn--primary" type="button" [disabled]="!selectedClinic()" (click)="nextFromClinic()">
+            التالي
+          </button>
+        </div>
+      }
+      @case (4) {
+        <h2 class="card__title">اختر التاريخ</h2>
+        <label class="field">
+          <span class="field__label">التاريخ</span>
+          <input
+            class="field__input"
+            type="date"
+            [ngModel]="appointmentDate()"
+            (ngModelChange)="appointmentDate.set($event)"
+          />
+        </label>
+        <div class="page__toolbar">
+          <button class="btn btn--ghost" type="button" (click)="goTo(3)">رجوع</button>
+          <button class="btn btn--primary" type="button" (click)="loadSlots()" [disabled]="loadingSlots()">
+            @if (loadingSlots()) {
+              <app-loading-spinner size="sm" label="" />
+            } @else {
+              تحميل التوفر
+            }
+          </button>
+        </div>
+      }
+      @case (5) {
+        <h2 class="card__title">اختر الموعد</h2>
+        @if (slots().length === 0) {
+          <app-empty-state title="لا توجد فترات" message="اختر تاريخاً آخر أو عد للخلف." />
+        } @else {
+          <div class="slot-grid">
+            @for (slot of slots(); track slot.start) {
+              <button type="button" class="slot-btn" (click)="pickSlot(slot)">
+                {{ formatTimeOnly(slot.start) }}
+              </button>
+            }
+          </div>
+        }
+        <div class="page__toolbar">
+          <button class="btn btn--ghost" type="button" (click)="goTo(4)">رجوع</button>
+        </div>
+      }
+      @case (6) {
+        <h2 class="card__title">سبب الزيارة</h2>
+        @if (selectedSlot(); as slot) {
+          <p class="text-muted">
+            {{ appointmentDate() }} — {{ formatTimeOnly(slot.start) }} – {{ formatTimeOnly(slot.end) }}
+          </p>
+        }
+        <label class="field">
+          <span class="field__label">السبب</span>
+          <input class="field__input" [ngModel]="reason()" (ngModelChange)="reason.set($event)" />
+        </label>
+        <label class="field">
+          <span class="field__label">ملاحظات</span>
+          <textarea class="field__textarea" [ngModel]="notes()" (ngModelChange)="notes.set($event)"></textarea>
+        </label>
+        <div class="page__toolbar">
+          <button class="btn btn--ghost" type="button" (click)="goTo(5)">رجوع</button>
+          <button class="btn btn--primary" type="button" [disabled]="submitting()" (click)="book()">
+            @if (submitting()) {
+              <app-loading-spinner size="sm" label="" />
+            } @else {
+              تأكيد الحجز
+            }
+          </button>
+        </div>
+      }
+    }
+  </div>
+</div>
