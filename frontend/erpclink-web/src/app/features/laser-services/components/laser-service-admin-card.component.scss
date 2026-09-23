@@ -1,0 +1,68 @@
+:host {
+  display: contents;
+}
+
+.service-chip--admin {
+  border-style: dashed;
+}
+
+.admin-panel {
+  grid-column: 1 / -1;
+  margin-top: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.admin-panel__title {
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+}
+
+.admin-add {
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 0.7fr auto;
+  gap: var(--space-3);
+  align-items: end;
+  margin-bottom: var(--space-4);
+}
+
+.admin-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.admin-list li {
+  display: grid;
+  grid-template-columns: 1.4fr 7rem auto auto auto;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.admin-list__name {
+  font-weight: 700;
+}
+
+.admin-list__price {
+  min-height: 2.4rem;
+}
+
+.admin-list__unit {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.admin-list__delete {
+  color: var(--danger, #b42318);
+}
+
+@media (max-width: 720px) {
+  .admin-add,
+  .admin-list li {
+    grid-template-columns: 1fr;
+  }
+}

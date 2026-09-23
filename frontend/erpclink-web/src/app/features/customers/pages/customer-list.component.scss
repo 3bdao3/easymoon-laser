@@ -77,7 +77,13 @@
 }
 
 .customers-table .col-duration {
-  width: 7%;
+  width: 10.5rem;
+}
+
+.customers-table td.duration-cell {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: unset;
 }
 
 .customers-table .col-status {

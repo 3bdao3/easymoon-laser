@@ -26,7 +26,15 @@ public sealed class LaserDashboardAppService : ILaserDashboardAppService
     public async Task<LaserDashboardDto> GetAsync(DateOnly? date, CancellationToken cancellationToken = default)
     {
         var day = date ?? DateOnly.FromDateTime(DateTime.Today);
-        var todays = await _appointments.ListAsync(day, null, cancellationToken);
+        var activeCustomerIds = (await _db.Customers.AsNoTracking()
+            .Where(c => c.IsActive)
+            .Select(c => c.Id)
+            .ToListAsync(cancellationToken)).ToHashSet();
+
+        var todays = (await _appointments.ListAsync(day, null, cancellationToken))
+            .Where(a => activeCustomerIds.Contains(a.CustomerId)
+                        && a.Status != LaserAppointmentStatus.Cancelled)
+            .ToList();
         var settings = await _settings.EnsureAsync(cancellationToken);
         var totalMinutes = (int)(settings.ClosingTime - settings.OpeningTime).TotalMinutes;
 
@@ -40,8 +48,9 @@ public sealed class LaserDashboardAppService : ILaserDashboardAppService
             a.Status is LaserAppointmentStatus.Pending or LaserAppointmentStatus.Confirmed);
 
         var upcoming = (await _appointments.ListAsync(null, null, cancellationToken))
-            .Where(a => a.AppointmentDate > day
-                        || (a.AppointmentDate == day && a.Status is LaserAppointmentStatus.Pending or LaserAppointmentStatus.Confirmed))
+            .Where(a => activeCustomerIds.Contains(a.CustomerId)
+                        && (a.AppointmentDate > day
+                            || (a.AppointmentDate == day && a.Status is LaserAppointmentStatus.Pending or LaserAppointmentStatus.Confirmed)))
             .OrderBy(a => a.AppointmentDate).ThenBy(a => a.StartTime)
             .Take(10)
             .ToList();
@@ -49,10 +58,14 @@ public sealed class LaserDashboardAppService : ILaserDashboardAppService
         var monthStart = new DateOnly(day.Year, day.Month, 1);
         var nextMonth = monthStart.AddMonths(1);
 
+        var activeAppointments = _db.Appointments.AsNoTracking()
+            .Where(a => a.Status != LaserAppointmentStatus.Cancelled
+                        && _db.Customers.Any(c => c.Id == a.CustomerId && c.IsActive));
+
         var pulseLines = _db.AppointmentServices.AsNoTracking()
             .Where(line => line.PulsesConsumed != null && line.PulsesConsumed > 0)
             .Join(
-                _db.Appointments.AsNoTracking().Where(a => a.Status != LaserAppointmentStatus.Cancelled),
+                activeAppointments,
                 line => line.AppointmentId,
                 a => a.Id,
                 (line, a) => new { a.AppointmentDate, Pulses = line.PulsesConsumed!.Value });

@@ -14,6 +14,7 @@ public sealed class LaserService : AggregateRoot
     public int MaxDurationMinutes { get; private set; }
     public bool IsActive { get; private set; }
     public int DisplayOrder { get; private set; }
+    public decimal Price { get; private set; }
     public string? Notes { get; private set; }
 
     public static LaserService Create(
@@ -21,11 +22,13 @@ public sealed class LaserService : AggregateRoot
         int minDurationMinutes,
         int maxDurationMinutes,
         int displayOrder,
+        decimal price,
         string? notes,
         string? userId,
         DateTime utcNow)
     {
         ValidateDurations(minDurationMinutes, maxDurationMinutes);
+        ValidatePrice(price);
         var entity = new LaserService
         {
             Id = Guid.NewGuid(),
@@ -33,6 +36,7 @@ public sealed class LaserService : AggregateRoot
             MinDurationMinutes = minDurationMinutes,
             MaxDurationMinutes = maxDurationMinutes,
             DisplayOrder = displayOrder,
+            Price = price,
             Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
             IsActive = true
         };
@@ -45,15 +49,18 @@ public sealed class LaserService : AggregateRoot
         int minDurationMinutes,
         int maxDurationMinutes,
         int displayOrder,
+        decimal price,
         string? notes,
         string? userId,
         DateTime utcNow)
     {
         ValidateDurations(minDurationMinutes, maxDurationMinutes);
+        ValidatePrice(price);
         Name = NormalizeName(name);
         MinDurationMinutes = minDurationMinutes;
         MaxDurationMinutes = maxDurationMinutes;
         DisplayOrder = displayOrder;
+        Price = price;
         Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
         SetUpdated(userId, utcNow);
     }
@@ -81,5 +88,11 @@ public sealed class LaserService : AggregateRoot
             throw new ArgumentOutOfRangeException(nameof(min), "Min duration must be positive.");
         if (max < min)
             throw new ArgumentOutOfRangeException(nameof(max), "Max duration must be >= min duration.");
+    }
+
+    private static void ValidatePrice(decimal price)
+    {
+        if (price < 0)
+            throw new ArgumentOutOfRangeException(nameof(price), "Price cannot be negative.");
     }
 }

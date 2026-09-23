@@ -84,18 +84,21 @@
                 <td data-label="الخدمات القادمة">
                   <span class="services-cell" [title]="servicesTitle(next)">{{ servicesPreview(next) }}</span>
                 </td>
-                <td data-label="المدة">{{ next.durationMinutes }} دقيقة</td>
+                <td class="duration-cell" data-label="المدة">
+                  <app-time-span [start]="next.startTime" [end]="next.endTime" />
+                </td>
                 <td data-label="الحالة">
                   <select
                     class="form-field__select status-select"
                     [class]="badgeClass(next.status)"
-                    [value]="next.status"
-                    (change)="onStatusChange(row, next, $any($event.target).value)"
+                    [ngModel]="next.status"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="onStatusChange(row, next, $event)"
                     [disabled]="updatingStatusId() === next.id"
                     title="تغيير الحالة"
                   >
                     @for (s of editableStatuses; track s) {
-                      <option [value]="s">{{ statusLabel(s) }}</option>
+                      <option [ngValue]="s">{{ statusLabel(s) }}</option>
                     }
                   </select>
                 </td>

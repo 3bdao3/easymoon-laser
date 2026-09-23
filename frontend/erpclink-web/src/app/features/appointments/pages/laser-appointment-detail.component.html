@@ -2,190 +2,60 @@
   <app-loading-spinner label="جاري تحميل الجلسة…" />
 } @else {
   @if (item(); as a) {
-    <app-page-header [title]="'تفاصيل الجلسة'" [subtitle]="a.customerName + ' · ' + formatDateAr(a.appointmentDate)">
-      <button actions type="button" class="btn btn--ghost" (click)="backToCustomer()">رجوع للعميلة</button>
+    <app-page-header [title]="'الجلسة'" [subtitle]="a.customerName + ' · ' + formatDateAr(a.appointmentDate)">
+      <button actions type="button" class="btn btn--ghost" (click)="back()">رجوع</button>
     </app-page-header>
 
-    <div class="detail-layout">
-      <section class="card detail-summary">
-        <div class="detail-summary__date">
-          <span class="detail-item__label">تاريخ الجلسة</span>
-          <strong>{{ formatDateAr(a.appointmentDate) }}</strong>
+    <section class="card session-pay" [formGroup]="form">
+      <h2 class="card__title">الجلسة دي</h2>
+      <p class="text-muted hub-hint">اكتب هيدفع كام، وكام نبضة اتاخدت في الجلسة. المتبقي يتحدث لوحده.</p>
+
+      <div class="session-form-grid">
+        <label class="form-field">
+          <span class="form-field__label">هيدفع كام</span>
+          <input class="form-field__input" type="number" min="0" step="0.01" inputmode="decimal" formControlName="amountPaid" placeholder="مثال: 500" />
+          <span class="form-field__hint">المطلوب: {{ money(dueAmount()) }}</span>
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">نبضات الجلسة دي</span>
+          <input class="form-field__input" type="number" min="1" max="5000" inputmode="numeric" formControlName="pulsesConsumed" placeholder="مثال: 300" />
+        </label>
+      </div>
+
+      <div class="remain-grid">
+        <div class="remaining-box">
+          <span>متبقي النبضات</span>
+          <strong class="remaining-box__value">{{ pulsesLeft() ?? '—' }}</strong>
         </div>
-        <div class="detail-summary__meta">
-          <div>
-            <span class="detail-item__label">الوقت المحجوز</span>
-            <div class="detail-item__value">
-              {{ formatTimeAr(a.startTime) }} – {{ formatTimeAr(a.endTime) }}
-            </div>
-          </div>
-          <div>
-            <span class="detail-item__label">الحالة</span>
-            <div class="detail-item__value">
-              <span class="badge" [class]="badgeClass(a.status)">{{ statusLabel(a.status) }}</span>
-            </div>
-          </div>
+        <div class="remaining-box">
+          <span>الفلوس الباقية بعد الدفع</span>
+          <strong class="remaining-box__value">{{ money(moneyLeft()) }}</strong>
         </div>
+      </div>
 
-        @if (pulseBalance(); as bal) {
-          @if (bal.packageTotal != null) {
-            <div class="pulse-pkg">
-              <div class="pulse-pkg__title">المتبقي للعميلة</div>
-              <div class="pulse-pkg__grid">
-                <div>
-                  <span class="detail-item__label">متبقي النبضات</span>
-                  <strong class="pulse-pkg__remain">{{ bal.remaining ?? 0 }}</strong>
-                  <span class="text-muted">/ {{ bal.packageTotal }}</span>
-                </div>
-                <div>
-                  <span class="detail-item__label">متبقي الفلوس</span>
-                  <strong class="pulse-pkg__remain">
-                    {{ bal.packagePriceTotal != null ? (bal.remainingAmount ?? 0) : '—' }}
-                  </strong>
-                  @if (bal.packagePriceTotal != null) {
-                    <span class="text-muted">/ {{ bal.packagePriceTotal }}</span>
-                  }
-                </div>
-                <div>
-                  <span class="detail-item__label">متبقي الوقت</span>
-                  <strong class="pulse-pkg__remain">
-                    {{ bal.packageDurationTotalMinutes != null ? (bal.remainingDurationMinutes ?? 0) + ' د' : '—' }}
-                  </strong>
-                  @if (bal.packageDurationTotalMinutes != null) {
-                    <span class="text-muted">/ {{ bal.packageDurationTotalMinutes }} د</span>
-                  }
-                </div>
-              </div>
-              <div class="pulse-pkg__money">
-                <div>
-                  <span class="detail-item__label">إجمالي المدفوع</span>
-                  <strong>{{ totalAmountPaid() }}</strong>
-                </div>
-                <div>
-                  <span class="detail-item__label">مدفوع هذه الجلسة</span>
-                  <strong>{{ a.amountPaid != null ? a.amountPaid : '—' }}</strong>
-                </div>
-              </div>
-              <p class="text-muted pulse-pkg__hint">
-                المتاح لهذه الجلسة: {{ availablePulses() }} نبضة (يُقترح تلقائياً في الحقل)
-              </p>
-            </div>
-          }
-        }
+      <h3 class="detail-section-title">الجلسة الجاية</h3>
+      <p class="text-muted hub-hint">أول ما تختار التاريخ والوقت تتعمل جلسة جديدة، ويتكتب فيها المتبقي من الفلوس والنبضات.</p>
+      <div class="session-form-grid">
+        <label class="form-field">
+          <span class="form-field__label">التاريخ</span>
+          <input class="form-field__input" type="date" formControlName="nextDate" [min]="minDate" />
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">الوقت</span>
+          <input class="form-field__input" type="time" formControlName="nextTime" />
+        </label>
+      </div>
+      @if (scheduling()) {
+        <p class="text-muted">جاري إنشاء الجلسة الجاية…</p>
+      } @else if (nextId()) {
+        <p class="next-ready">الجلسة الجاية اتسجلت، والمتبقي اتكتب فيها.</p>
+      }
 
-        <div class="detail-summary__actions">
-          <a class="btn btn--ghost" [routerLink]="['/app/customers', a.customerId]">ملف العميلة</a>
-          <button
-            type="button"
-            class="btn btn--ghost"
-            *appHasPermission="permissions.LaserAppointmentsCancel"
-            (click)="cancel()"
-          >
-            إلغاء الجلسة
-          </button>
-        </div>
-      </section>
-
-      <section class="card detail-info" [formGroup]="form">
-        <h2 class="card__title">تسجيل نتيجة الجلسة</h2>
-        <p class="text-muted hub-hint">
-          بعد انتهاء الجلسة: أدخلي النبضات والمدة والمبلغ ثم احفظي — المتبقي يُحدَّث من الباكدج تلقائياً.
-        </p>
-
-        <h3 class="detail-section-title">المناطق</h3>
-        <div class="area-pill-list">
-          @for (s of a.services; track s.id) {
-            <span class="area-pill">{{ s.serviceName }}</span>
-          }
-        </div>
-
-        <div class="session-form-grid">
-          @if (hasPulsePackage()) {
-            <label class="form-field">
-              <span class="form-field__label">عدد النبضات المستهلكة</span>
-              <input
-                class="form-field__input"
-                type="number"
-                min="1"
-                max="5000"
-                inputmode="numeric"
-                placeholder="المتبقي من الباكدج"
-                formControlName="pulsesConsumed"
-                (input)="onPulsesInput()"
-              />
-              <span class="form-field__hint text-muted">افتراضي: المتبقي المتاح ({{ availablePulses() }})</span>
-            </label>
-          }
-
-          <label class="form-field">
-            <span class="form-field__label">مدة الجلسة الفعلية (دقائق)</span>
-            <input
-              class="form-field__input"
-              type="number"
-              min="1"
-              max="480"
-              inputmode="numeric"
-              placeholder="مثال: 30"
-              formControlName="durationMinutes"
-            />
-          </label>
-
-          <label class="form-field">
-            <span class="form-field__label">المبلغ المدفوع لهذه الجلسة</span>
-            <input
-              class="form-field__input"
-              type="number"
-              min="0"
-              step="0.01"
-              inputmode="decimal"
-              placeholder="مثال: 250"
-              formControlName="amountPaid"
-            />
-          </label>
-
-          @if (needsPackagePrice()) {
-            <label class="form-field">
-              <span class="form-field__label">سعر الباكدج الإجمالي</span>
-              <input
-                class="form-field__input"
-                type="number"
-                min="0"
-                step="0.01"
-                inputmode="decimal"
-                placeholder="مثال: 1000"
-                formControlName="packagePrice"
-              />
-              <span class="form-field__hint text-muted">يُسجَّل مرة واحدة لحساب المتبقي من الفلوس</span>
-            </label>
-          }
-        </div>
-
-        @if (hasPulsePackage() && packageTotal() != null) {
-          <div class="remaining-box">
-            <div>
-              <span class="detail-item__label">المتبقي بعد الحفظ</span>
-              <strong class="remaining-box__value">
-                {{ remainingAfterSave() ?? '—' }}
-                <span class="text-muted">/ {{ packageTotal() }}</span>
-              </strong>
-            </div>
-            <p class="text-muted remaining-box__hint">يُخصم تلقائياً من باكدج العميلة عند الحفظ</p>
-          </div>
-        }
-
-        <div class="row-actions session-actions">
-          <button
-            type="button"
-            class="btn btn--primary"
-            [disabled]="saving()"
-            *appHasPermission="permissions.LaserAppointmentsUpdate"
-            (click)="save()"
-          >
-            {{ saving() ? 'جاري الحفظ…' : 'حفظ الجلسة' }}
-          </button>
-          <button type="button" class="btn btn--ghost" (click)="backToCustomer()">رجوع</button>
-        </div>
-      </section>
-    </div>
+      <div class="row-actions session-actions">
+        <button type="button" class="btn btn--primary" [disabled]="saving() || scheduling()" (click)="saveSession()">
+          {{ saving() ? 'جاري الحفظ…' : 'حفظ الجلسة دي' }}
+        </button>
+      </div>
+    </section>
   }
 }

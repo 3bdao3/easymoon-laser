@@ -15,11 +15,14 @@ import {
   LaserServiceDto,
   formatDateAr,
   formatTimeAr,
+  egyptianMobileValidator,
+  normalizeEgyptianMobile,
   serviceRequiresManualDuration,
   toApiTime
 } from '../../laser-clinic/models/laser-clinic.models';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
+import { LaserServiceAdminCardComponent } from '../../laser-services/components/laser-service-admin-card.component';
 import { ToastService } from '../../../core/services/toast.service';
 
 type CustomerMode = 'new' | 'existing';
@@ -27,7 +30,7 @@ type CustomerMode = 'new' | 'existing';
 @Component({
   selector: 'app-new-customer-booking',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, PageHeaderComponent, LoadingSpinnerComponent],
+  imports: [ReactiveFormsModule, RouterLink, PageHeaderComponent, LoadingSpinnerComponent, LaserServiceAdminCardComponent],
   templateUrl: './new-customer-booking.component.html',
   styleUrl: './new-customer-booking.component.scss'
 })
@@ -63,7 +66,10 @@ export class NewCustomerBookingComponent implements OnInit, OnDestroy {
 
   readonly customerForm = new FormGroup({
     fullName: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    phoneNumber: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    phoneNumber: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, egyptianMobileValidator]
+    }),
     age: new FormControl<number | null>(null),
     notes: new FormControl('', { nonNullable: true })
   });
@@ -149,11 +155,13 @@ export class NewCustomerBookingComponent implements OnInit, OnDestroy {
     return '—';
   });
 
+  private readonly typedName = signal('');
+
   readonly summaryName = computed(() => {
     if (this.mode() === 'existing') {
-      return this.selectedExisting()?.fullName ?? '—';
+      return this.selectedExisting()?.fullName?.trim() || '—';
     }
-    return this.customerForm.controls.fullName.value.trim() || '—';
+    return this.typedName().trim() || '—';
   });
 
   readonly isToday = computed(() => this.appointmentForm.controls.date.value === this.minDate);
@@ -162,6 +170,11 @@ export class NewCustomerBookingComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadServices();
+    this.typedName.set(this.customerForm.controls.fullName.value);
+    this.customerForm.controls.fullName.valueChanges
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((value) => this.typedName.set(value));
+
     this.existingQuery.valueChanges
       .pipe(debounceTime(300), takeUntil(this.destroy$))
       .subscribe(() => this.searchExisting());
@@ -384,7 +397,11 @@ export class NewCustomerBookingComponent implements OnInit, OnDestroy {
       if (this.customerForm.invalid) {
         this.customerForm.markAllAsTouched();
         this.focusCustomerSection();
-        this.toast.error('اكتبي اسم العميلة ورقم الهاتف فوق عشان يتكمل الحجز');
+        this.toast.error(
+          this.customerForm.controls.phoneNumber.hasError('egyptMobile')
+            ? 'رقم الموبايل لازم يكون مصري، مثال: 01012345678'
+            : 'اكتبي اسم العميلة ورقم الهاتف فوق عشان يتكمل الحجز'
+        );
         return;
       }
     } else if (!this.selectedExisting()) {
@@ -394,7 +411,11 @@ export class NewCustomerBookingComponent implements OnInit, OnDestroy {
     } else if (this.customerForm.invalid) {
       this.customerForm.markAllAsTouched();
       this.focusCustomerSection();
-      this.toast.error('أكملي اسم ورقم هاتف العميلة المختارة');
+      this.toast.error(
+        this.customerForm.controls.phoneNumber.hasError('egyptMobile')
+          ? 'رقم الموبايل لازم يكون مصري، مثال: 01012345678'
+          : 'أكملي اسم ورقم هاتف العميلة المختارة'
+      );
       return;
     }
 
@@ -430,7 +451,7 @@ export class NewCustomerBookingComponent implements OnInit, OnDestroy {
             this.mode() === 'new'
               ? {
                   fullName: cust.fullName.trim(),
-                  phoneNumber: cust.phoneNumber.trim(),
+                  phoneNumber: normalizeEgyptianMobile(cust.phoneNumber) ?? cust.phoneNumber.trim(),
                   age: cust.age,
                   notes: cust.notes.trim() || null
                 }
@@ -449,12 +470,16 @@ export class NewCustomerBookingComponent implements OnInit, OnDestroy {
             const finish = () => {
               this.toast.success('تم تأكيد وحفظ الحجز');
               this.submitting.set(false);
-              void this.router.navigate(['/app/appointments', created.id]);
+              void this.router.navigate(['/app/customers'], { queryParams: { sort: 'Newest' } });
             };
             if (desired !== created.status) {
               this.appointmentsApi.updateStatus(created.id, desired).subscribe({
                 next: finish,
-                error: () => finish()
+                error: (err) => {
+                  const detail = err?.error?.detail || err?.error?.title || err?.error?.message;
+                  this.toast.error(detail || 'تسجيل «حضرت» يتم في يوم الموعد وبعد وقت البداية فقط.');
+                  finish();
+                }
               });
             } else {
               finish();
@@ -481,7 +506,7 @@ export class NewCustomerBookingComponent implements OnInit, OnDestroy {
       this.customersApi
         .update(existing.id, {
           fullName: cust.fullName.trim(),
-          phoneNumber: cust.phoneNumber.trim(),
+          phoneNumber: normalizeEgyptianMobile(cust.phoneNumber) ?? cust.phoneNumber.trim(),
           age: cust.age,
           notes: cust.notes.trim() || null
         })

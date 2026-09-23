@@ -53,4 +53,12 @@ public sealed class LaserServicesController : ControllerBase
         [FromBody] UpdateLaserServiceRequest request,
         CancellationToken cancellationToken)
         => Ok(await _services.UpdateAsync(id, request, _currentUser.UserId, cancellationToken));
+
+    [HttpDelete("{id:guid}")]
+    [HasPermission(PermissionCodes.LaserServicesManage)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _services.DeleteAsync(id, _currentUser.UserId, cancellationToken);
+        return NoContent();
+    }
 }

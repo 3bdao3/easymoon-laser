@@ -92,7 +92,9 @@
                     </td>
                     <td data-label="رقم الهاتف">{{ row.customerPhone }}</td>
                     <td data-label="الخدمة">{{ serviceNames(row) }}</td>
-                    <td data-label="المدة">{{ row.durationMinutes }} دقيقة</td>
+                    <td data-label="المدة">
+                      <app-time-span [start]="row.startTime" [end]="row.endTime" />
+                    </td>
                     <td data-label="الحالة">
                       <span class="badge" [class]="badgeClass(row.status)">{{ statusLabel(row.status) }}</span>
                     </td>

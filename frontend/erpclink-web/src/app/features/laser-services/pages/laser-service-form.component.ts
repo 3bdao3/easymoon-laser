@@ -33,6 +33,7 @@ export class LaserServiceFormComponent implements OnInit {
       validators: [Validators.required, Validators.min(1)]
     }),
     displayOrder: new FormControl(0, { nonNullable: true }),
+    price: new FormControl(0, { nonNullable: true, validators: [Validators.required, Validators.min(0)] }),
     notes: new FormControl('', { nonNullable: true }),
     isActive: new FormControl(true, { nonNullable: true })
   });
@@ -55,6 +56,7 @@ export class LaserServiceFormComponent implements OnInit {
           minDurationMinutes: s.minDurationMinutes,
           maxDurationMinutes: s.maxDurationMinutes,
           displayOrder: s.displayOrder,
+          price: s.price,
           notes: s.notes ?? '',
           isActive: s.isActive
         });
@@ -83,6 +85,7 @@ export class LaserServiceFormComponent implements OnInit {
           minDurationMinutes: raw.minDurationMinutes,
           maxDurationMinutes: raw.maxDurationMinutes,
           displayOrder: raw.displayOrder,
+          price: raw.price,
           notes: raw.notes.trim() || null,
           isActive: raw.isActive
         })
@@ -101,6 +104,7 @@ export class LaserServiceFormComponent implements OnInit {
           minDurationMinutes: raw.minDurationMinutes,
           maxDurationMinutes: raw.maxDurationMinutes,
           displayOrder: raw.displayOrder,
+          price: raw.price,
           notes: raw.notes.trim() || null
         })
         .subscribe({

@@ -1,0 +1,55 @@
+@if (canManage) {
+  <button type="button" class="service-chip service-chip--admin" (click)="toggle()">
+    <span class="service-chip__icon" aria-hidden="true">✦</span>
+    <span class="service-chip__name">إدارة الأدمن</span>
+    <span class="service-chip__duration">إضافة · سعر · حذف</span>
+  </button>
+
+  @if (open()) {
+    <section class="admin-panel">
+      <h3 class="admin-panel__title">إدارة المناطق</h3>
+
+      <form class="admin-add" [formGroup]="addForm" (ngSubmit)="add()">
+        <label class="form-field">
+          <span class="form-field__label">اسم المنطقة</span>
+          <input class="form-field__input" formControlName="name" placeholder="مثال: إبط" />
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">المدة (دقيقة)</span>
+          <input class="form-field__input" type="number" min="1" formControlName="durationMinutes" />
+        </label>
+        <label class="form-field">
+          <span class="form-field__label">السعر (ج.م)</span>
+          <input class="form-field__input" type="number" min="0" formControlName="price" />
+        </label>
+        <button class="btn btn--primary" type="submit" [disabled]="saving()">إضافة</button>
+      </form>
+
+      @if (loading()) {
+        <p class="text-muted">جاري التحميل…</p>
+      } @else {
+        <ul class="admin-list">
+          @for (row of items(); track row.id) {
+            <li>
+              <span class="admin-list__name">{{ row.name }}</span>
+              <input
+                class="form-field__input admin-list__price"
+                type="number"
+                min="0"
+                [value]="priceOf(row.id)"
+                (input)="setPrice(row.id, $any($event.target).value)"
+              />
+              <span class="admin-list__unit">ج.م</span>
+              <button class="btn btn--ghost btn--sm" type="button" [disabled]="saving()" (click)="savePrice(row)">
+                حفظ السعر
+              </button>
+              <button class="btn btn--ghost btn--sm admin-list__delete" type="button" [disabled]="saving()" (click)="remove(row)">
+                حذف
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  }
+}

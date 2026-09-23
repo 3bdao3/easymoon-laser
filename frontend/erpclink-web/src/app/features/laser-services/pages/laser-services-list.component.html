@@ -24,6 +24,7 @@
             <th>الحد الأدنى</th>
             <th>الحد الأقصى</th>
             <th>المدة الموصى بها</th>
+            <th>السعر</th>
             <th>الحالة</th>
             <th></th>
           </tr>
@@ -36,6 +37,7 @@
               <td data-label="الحد الأدنى">{{ row.minDurationMinutes }} د</td>
               <td data-label="الحد الأقصى">{{ row.maxDurationMinutes }} د</td>
               <td data-label="المدة الموصى بها">{{ row.recommendedDurationMinutes }} د</td>
+              <td data-label="السعر">{{ row.price }} ج.م</td>
               <td data-label="الحالة">
                 <span class="badge" [class]="row.isActive ? 'badge--attended' : 'badge--muted'">
                   {{ row.isActive ? 'نشطة' : 'موقوفة' }}
@@ -47,8 +49,16 @@
                   [routerLink]="[row.id, 'edit']"
                   *appHasPermission="permissions.LaserServicesManage"
                 >
-                  تعديل المدد
+                  تعديل
                 </a>
+                <button
+                  type="button"
+                  class="btn btn--ghost btn--sm"
+                  *appHasPermission="permissions.LaserServicesManage"
+                  (click)="remove(row)"
+                >
+                  حذف
+                </button>
               </td>
             </tr>
           }

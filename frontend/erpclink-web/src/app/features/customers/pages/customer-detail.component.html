@@ -138,7 +138,9 @@
             </div>
             <div>
               <div class="detail-item__label">مدة الموعد</div>
-              <div class="detail-item__value">{{ next.durationMinutes }} دقيقة</div>
+              <div class="detail-item__value">
+                <app-time-span [start]="next.startTime" [end]="next.endTime" />
+              </div>
             </div>
             @if (pulseBalance(); as pulse) {
               @if (pulse.packageTotal != null) {
@@ -165,12 +167,13 @@
               <div class="detail-item__value">
                 <select
                   class="form-field__select status-select"
-                  [value]="next.status"
+                  [ngModel]="next.status"
+                  [ngModelOptions]="{ standalone: true }"
                   [disabled]="updatingStatus()"
-                  (change)="onNextStatusChange(next, $any($event.target).value)"
+                  (ngModelChange)="onNextStatusChange(next, $event)"
                 >
                   @for (s of editableStatuses; track s) {
-                    <option [value]="s">{{ statusLabel(s) }}</option>
+                    <option [ngValue]="s">{{ statusLabel(s) }}</option>
                   }
                 </select>
               </div>
@@ -190,29 +193,34 @@
       </section>
 
       <section class="card">
-        <h2 class="card__title">سجل المواعيد</h2>
+        <h2 class="card__title">الجلسات السابقة</h2>
+        <p class="text-muted session-history-hint">الجلسات التي نُفذت من قبل، والمبلغ المدفوع في كل مرة.</p>
         @if (pastAppointments().length === 0) {
-          <p class="text-muted">لا يوجد سجل سابق.</p>
+          <p class="text-muted">لا توجد جلسات سابقة.</p>
         } @else {
           <div class="table-wrap">
             <table class="table table-cards">
               <thead>
                 <tr>
                   <th>التاريخ</th>
-                  <th>الوقت</th>
-                  <th>الخدمات</th>
+                  <th>الجلسة</th>
                   <th>المدة</th>
                   <th>نبضات الجلسة</th>
+                  <th>المدفوع</th>
                   <th>الحالة</th>
                 </tr>
               </thead>
               <tbody>
                 @for (a of pastAppointments(); track a.id) {
                   <tr>
-                    <td data-label="التاريخ">{{ formatDateAr(a.appointmentDate) }}</td>
-                    <td data-label="الوقت">{{ formatTimeAr(a.startTime) }}</td>
-                    <td data-label="الخدمات">{{ serviceNames(a) }}</td>
-                    <td data-label="المدة">{{ a.durationMinutes }} دقيقة</td>
+                    <td data-label="التاريخ">
+                      {{ formatDateAr(a.appointmentDate) }}
+                      <span class="text-muted"> · {{ formatTimeAr(a.startTime) }}</span>
+                    </td>
+                    <td data-label="الجلسة">{{ serviceNames(a) }}</td>
+                    <td data-label="المدة">
+                      <app-time-span [start]="a.startTime" [end]="a.endTime" />
+                    </td>
                     <td data-label="نبضات الجلسة">
                       @if (appointmentPulsesConsumed(a); as pulses) {
                         {{ pulses }}
@@ -220,6 +228,7 @@
                         —
                       }
                     </td>
+                    <td data-label="المدفوع">{{ money(a.amountPaid) }}</td>
                     <td data-label="الحالة">
                       <span class="badge" [class]="badgeClass(a.status)">{{ statusLabel(a.status) }}</span>
                     </td>
@@ -228,6 +237,7 @@
               </tbody>
             </table>
           </div>
+          <p class="session-history-total">إجمالي المدفوع: {{ money(totalPastPaid()) }}</p>
         }
       </section>
     }

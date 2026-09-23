@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { Permissions } from '../../../core/permissions/permissions';
 import { CustomersApi } from '../../laser-clinic/services/customers-api.service';
@@ -22,17 +22,20 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../shared/components/confirm-dialog/confirm.service';
+import { TimeSpanComponent } from '../../../shared/components/time-span/time-span.component';
 
 @Component({
   selector: 'app-customer-list',
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    FormsModule,
     RouterLink,
     PageHeaderComponent,
     LoadingSpinnerComponent,
     EmptyStateComponent,
-    HasPermissionDirective
+    HasPermissionDirective,
+    TimeSpanComponent
   ],
   templateUrl: './customer-list.component.html',
   styleUrl: './customer-list.component.scss'
@@ -43,6 +46,7 @@ export class CustomerListComponent implements OnInit {
   private readonly toast = inject(ToastService);
   private readonly confirm = inject(ConfirmService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly permissions = Permissions;
   readonly loading = signal(true);
@@ -61,6 +65,16 @@ export class CustomerListComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    const requested = this.route.snapshot.queryParamMap.get('sort');
+    if (
+      requested === 'Name' ||
+      requested === 'NextAppointment' ||
+      requested === 'Newest' ||
+      requested === 'Oldest' ||
+      requested === 'LastAppointment'
+    ) {
+      this.sort.setValue(requested, { emitEvent: false });
+    }
     this.load();
     this.query.valueChanges.pipe(debounceTime(300), distinctUntilChanged()).subscribe(() => this.load());
     this.sort.valueChanges.subscribe(() => this.load());
@@ -81,6 +95,15 @@ export class CustomerListComponent implements OnInit {
     void this.router.navigate(['/app/customers/new']);
   }
 
+  private statusError(err: { error?: { detail?: string; title?: string; message?: string } }): string {
+    return (
+      err?.error?.detail ||
+      err?.error?.title ||
+      err?.error?.message ||
+      'تسجيل «حضرت» يتم في يوم الموعد وبعد وقت البداية فقط.'
+    );
+  }
+
   statusLabel(status: LaserAppointmentStatus): string {
     return LASER_APPOINTMENT_STATUS_LABELS[status];
   }
@@ -89,7 +112,7 @@ export class CustomerListComponent implements OnInit {
     return LASER_APPOINTMENT_STATUS_BADGE[status];
   }
 
-  onStatusChange(row: CustomerListItemDto, next: CustomerNextAppointmentDto, raw: string): void {
+  onStatusChange(row: CustomerListItemDto, next: CustomerNextAppointmentDto, raw: LaserAppointmentStatus | string): void {
     const status = Number(raw) as LaserAppointmentStatus;
     if (status === next.status) {
       return;
@@ -113,8 +136,9 @@ export class CustomerListComponent implements OnInit {
         this.updatingStatusId.set(null);
         this.toast.success('تم تحديث الحالة');
       },
-      error: () => {
+      error: (err) => {
         this.updatingStatusId.set(null);
+        this.toast.error(this.statusError(err));
         this.load();
       }
     });

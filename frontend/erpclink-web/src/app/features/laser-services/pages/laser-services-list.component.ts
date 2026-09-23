@@ -7,6 +7,8 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
+import { ConfirmService } from '../../../shared/components/confirm-dialog/confirm.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-laser-services-list',
@@ -23,6 +25,8 @@ import { HasPermissionDirective } from '../../../shared/directives/has-permissio
 })
 export class LaserServicesListComponent implements OnInit {
   private readonly api = inject(LaserServicesApi);
+  private readonly confirm = inject(ConfirmService);
+  private readonly toast = inject(ToastService);
 
   readonly permissions = Permissions;
   readonly loading = signal(true);
@@ -40,6 +44,25 @@ export class LaserServicesListComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
+    });
+  }
+
+  async remove(row: LaserServiceDto): Promise<void> {
+    const ok = await this.confirm.confirm({
+      title: 'حذف المنطقة',
+      message: `تمسح «${row.name}» من المناطق؟`,
+      confirmLabel: 'حذف',
+      variant: 'danger'
+    });
+    if (!ok) {
+      return;
+    }
+    this.api.delete(row.id).subscribe({
+      next: () => {
+        this.toast.success('اتشالت المنطقة');
+        this.load();
+      },
+      error: () => this.toast.error('تعذّر حذف المنطقة')
     });
   }
 }

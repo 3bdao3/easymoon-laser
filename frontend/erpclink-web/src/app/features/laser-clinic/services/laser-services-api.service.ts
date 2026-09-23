@@ -29,4 +29,8 @@ export class LaserServicesApi {
   update(id: string, body: UpdateLaserServiceRequest): Observable<LaserServiceDto> {
     return this.http.put<LaserServiceDto>(`${this.base}/${id}`, body);
   }
+
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
+  }
 }

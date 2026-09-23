@@ -162,10 +162,35 @@ public sealed class Customer : AggregateRoot
 
     private static string NormalizePhone(string phoneNumber)
     {
-        if (string.IsNullOrWhiteSpace(phoneNumber))
-            throw new ArgumentException("Phone number is required.", nameof(phoneNumber));
-        return phoneNumber.Trim();
+        var normalized = NormalizeEgyptianMobile(phoneNumber);
+        if (normalized is null)
+            throw new ArgumentException("رقم الموبايل لازم يكون مصري ويبدأ بـ 010 أو 011 أو 012 أو 015.", nameof(phoneNumber));
+        return normalized;
     }
+
+    public static string? NormalizeEgyptianMobile(string? phoneNumber)
+    {
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            return null;
+
+        var digits = new string(phoneNumber.Where(char.IsDigit).ToArray());
+        var local = digits;
+        if (local.StartsWith("0020", StringComparison.Ordinal))
+            local = local[4..];
+        else if (local.StartsWith("20", StringComparison.Ordinal) && local.Length is 12 or 13)
+            local = local[2..];
+
+        if (local.Length == 10 && local.StartsWith('1'))
+            local = "0" + local;
+
+        return IsEgyptianMobile(local) ? local : null;
+    }
+
+    private static bool IsEgyptianMobile(string value) =>
+        value.Length == 11
+        && value.StartsWith("01", StringComparison.Ordinal)
+        && value[2] is '0' or '1' or '2' or '5'
+        && value.All(char.IsDigit);
 
     private static void ValidateAge(int? age)
     {

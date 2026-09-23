@@ -105,6 +105,7 @@ export interface LaserServiceDto {
   recommendedDurationMinutes: number;
   isActive: boolean;
   displayOrder: number;
+  price: number;
   notes: string | null;
   requiresManualDuration?: boolean;
 }
@@ -118,6 +119,7 @@ export interface CreateLaserServiceRequest {
   minDurationMinutes: number;
   maxDurationMinutes: number;
   displayOrder: number;
+  price: number;
   notes?: string | null;
 }
 
@@ -126,6 +128,7 @@ export interface UpdateLaserServiceRequest {
   minDurationMinutes: number;
   maxDurationMinutes: number;
   displayOrder: number;
+  price: number;
   notes?: string | null;
   isActive: boolean;
 }
@@ -304,6 +307,38 @@ export function formatTime(value: string | null | undefined): string {
 }
 
 /** Format time as Arabic 12h style: 05:00 م */
+/** Egyptian mobile: 010 / 011 / 012 / 015 and 8 more digits. */
+const EGYPT_MOBILE = /^01[0125]\d{8}$/;
+
+export function normalizeEgyptianMobile(value: string | null | undefined): string | null {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  let local = digits;
+  if (local.startsWith('0020')) {
+    local = local.slice(4);
+  } else if (local.startsWith('20') && (local.length === 12 || local.length === 13)) {
+    local = local.slice(2);
+  }
+  if (local.length === 10 && local.startsWith('1')) {
+    local = `0${local}`;
+  }
+  return EGYPT_MOBILE.test(local) ? local : null;
+}
+
+export function egyptianMobileValidator(control: { value: unknown }): { egyptMobile: true } | null {
+  const raw = String(control.value ?? '').trim();
+  if (!raw) {
+    return null;
+  }
+  return normalizeEgyptianMobile(raw) ? null : { egyptMobile: true };
+}
+
+export function formatTimeRangeAr(start: string | null | undefined, end: string | null | undefined): string {
+  if (!start || !end) {
+    return '—';
+  }
+  return `من ${formatTimeAr(start)} إلى ${formatTimeAr(end)}`;
+}
+
 export function formatTimeAr(value: string | null | undefined): string {
   if (!value) {
     return '—';

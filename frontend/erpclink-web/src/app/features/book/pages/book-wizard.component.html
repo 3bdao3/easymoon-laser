@@ -71,7 +71,7 @@
               <input type="checkbox" [checked]="isServiceSelected(s.id)" (change)="toggleService(s.id)" />
               <span class="service-chip__icon" aria-hidden="true">◇</span>
               <strong>{{ s.name }}</strong>
-              <span class="text-muted">{{ s.recommendedDurationMinutes }} دقيقة</span>
+              <span class="text-muted">{{ s.price }} ج.م · {{ s.recommendedDurationMinutes }} دقيقة</span>
             </label>
           }
         </div>

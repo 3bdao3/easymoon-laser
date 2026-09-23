@@ -18,6 +18,8 @@ import {
   formatDateAr,
   formatTimeAr,
   appointmentPulsesConsumed,
+  egyptianMobileValidator,
+  normalizeEgyptianMobile,
   serviceRequiresManualDuration,
   toApiTime
 } from '../../laser-clinic/models/laser-clinic.models';
@@ -25,11 +27,13 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../shared/components/confirm-dialog/confirm.service';
+import { LaserServiceAdminCardComponent } from '../../laser-services/components/laser-service-admin-card.component';
+import { TimeSpanComponent } from '../../../shared/components/time-span/time-span.component';
 
 @Component({
   selector: 'app-customer-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, PageHeaderComponent, LoadingSpinnerComponent],
+  imports: [ReactiveFormsModule, RouterLink, PageHeaderComponent, LoadingSpinnerComponent, LaserServiceAdminCardComponent, TimeSpanComponent],
   templateUrl: './customer-form.component.html',
   styleUrl: './customer-form.component.scss'
 })
@@ -69,7 +73,10 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
 
   readonly profileForm = new FormGroup({
     fullName: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    phoneNumber: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    phoneNumber: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, egyptianMobileValidator]
+    }),
     age: new FormControl<number | null>(null),
     notes: new FormControl('', { nonNullable: true })
   });
@@ -466,7 +473,11 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
   saveProfile(options?: { navigate?: boolean }): void {
     if (this.profileForm.invalid) {
       this.profileForm.markAllAsTouched();
-      this.toast.error('أكملي بيانات العميلة');
+      this.toast.error(
+        this.profileForm.controls.phoneNumber.hasError('egyptMobile')
+          ? 'رقم الموبايل لازم يكون مصري، مثال: 01012345678'
+          : 'أكملي بيانات العميلة'
+      );
       return;
     }
     const id = this.customerId();
@@ -476,7 +487,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     this.api
       .update(id, {
         fullName: raw.fullName.trim(),
-        phoneNumber: raw.phoneNumber.trim(),
+        phoneNumber: normalizeEgyptianMobile(raw.phoneNumber) ?? raw.phoneNumber.trim(),
         age: raw.age,
         notes: raw.notes.trim() || null
       })
@@ -524,20 +535,23 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     };
 
     const afterSave = (appt: LaserAppointmentDto) => {
-      const finish = (finalAppt: LaserAppointmentDto) => {
+      const finish = (finalAppt: LaserAppointmentDto, statusSaved = true) => {
         const desiredStatus = Number(this.appointmentStatus.value) as LaserAppointmentStatus;
+        const appliedStatus = statusSaved ? desiredStatus : finalAppt.status;
         const completed =
-          desiredStatus === LaserAppointmentStatus.Attended ||
-          desiredStatus === LaserAppointmentStatus.NoShow ||
-          desiredStatus === LaserAppointmentStatus.Cancelled;
+          appliedStatus === LaserAppointmentStatus.Attended ||
+          appliedStatus === LaserAppointmentStatus.NoShow ||
+          appliedStatus === LaserAppointmentStatus.Cancelled;
 
-        this.toast.success(
-          editing
-            ? completed
-              ? `تم حفظ ${this.sessionLabel(finalAppt.id)} — يمكنك فتح جلسة جديدة`
-              : `تم تحديث ${this.sessionLabel(finalAppt.id)}`
-            : 'تم إنشاء جلسة جديدة'
-        );
+        if (statusSaved) {
+          this.toast.success(
+            editing
+              ? completed
+                ? `تم حفظ ${this.sessionLabel(finalAppt.id)} — يمكنك فتح جلسة جديدة`
+                : `تم تحديث ${this.sessionLabel(finalAppt.id)}`
+              : 'تم إنشاء جلسة جديدة'
+          );
+        }
         this.savingAppointment.set(false);
 
         this.api.getHistory(customerId).subscribe({
@@ -560,7 +574,11 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
       if (desiredStatus !== appt.status) {
         this.appointmentsApi.updateStatus(appt.id, desiredStatus).subscribe({
           next: (updated) => finish(updated),
-          error: () => finish(appt)
+          error: (err) => {
+            const detail = err?.error?.detail || err?.error?.title || err?.error?.message;
+            this.toast.error(detail || 'تسجيل «حضرت» يتم في يوم الموعد وبعد وقت البداية فقط.');
+            finish(appt, false);
+          }
         });
       } else {
         finish(appt);
@@ -613,7 +631,11 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
   saveAll(): void {
     if (this.profileForm.invalid) {
       this.profileForm.markAllAsTouched();
-      this.toast.error('أكملي بيانات العميلة');
+      this.toast.error(
+        this.profileForm.controls.phoneNumber.hasError('egyptMobile')
+          ? 'رقم الموبايل لازم يكون مصري، مثال: 01012345678'
+          : 'أكملي بيانات العميلة'
+      );
       return;
     }
     const id = this.customerId();
@@ -626,7 +648,7 @@ export class CustomerFormComponent implements OnInit, OnDestroy {
     this.api
       .update(id, {
         fullName: raw.fullName.trim(),
-        phoneNumber: raw.phoneNumber.trim(),
+        phoneNumber: normalizeEgyptianMobile(raw.phoneNumber) ?? raw.phoneNumber.trim(),
         age: raw.age,
         notes: raw.notes.trim() || null
       })

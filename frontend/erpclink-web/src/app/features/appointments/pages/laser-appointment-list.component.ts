@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Permissions } from '../../../core/permissions/permissions';
 import { LaserAppointmentsApi } from '../../laser-clinic/services/laser-appointments-api.service';
@@ -16,17 +16,20 @@ import { EmptyStateComponent } from '../../../shared/components/empty-state/empt
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ToastService } from '../../../core/services/toast.service';
 import { ConfirmService } from '../../../shared/components/confirm-dialog/confirm.service';
+import { TimeSpanComponent } from '../../../shared/components/time-span/time-span.component';
 
 @Component({
   selector: 'app-laser-appointment-list',
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    FormsModule,
     RouterLink,
     PageHeaderComponent,
     LoadingSpinnerComponent,
     EmptyStateComponent,
-    HasPermissionDirective
+    HasPermissionDirective,
+    TimeSpanComponent
   ],
   templateUrl: './laser-appointment-list.component.html',
   styleUrl: './laser-appointment-list.component.scss'
@@ -79,7 +82,7 @@ export class LaserAppointmentListComponent implements OnInit {
     return row.services.map((s) => s.serviceName).join('، ');
   }
 
-  onStatusChange(row: LaserAppointmentDto, value: string): void {
+  onStatusChange(row: LaserAppointmentDto, value: LaserAppointmentStatus | string): void {
     this.updateStatus(row, Number(value) as LaserAppointmentStatus);
   }
 
@@ -90,6 +93,11 @@ export class LaserAppointmentListComponent implements OnInit {
     this.api.updateStatus(row.id, status).subscribe({
       next: () => {
         this.toast.success('تم تحديث الحالة');
+        this.load();
+      },
+      error: (err) => {
+        const detail = err?.error?.detail || err?.error?.title || err?.error?.message;
+        this.toast.error(detail || 'تسجيل «حضرت» يتم في يوم الموعد وبعد وقت البداية فقط.');
         this.load();
       }
     });

@@ -36,6 +36,7 @@ public sealed class LaserServiceCatalogAppService : ILaserServiceCatalogAppServi
             request.MinDurationMinutes,
             request.MaxDurationMinutes,
             request.DisplayOrder,
+            request.Price,
             request.Notes,
             userId,
             DateTime.UtcNow);
@@ -54,12 +55,27 @@ public sealed class LaserServiceCatalogAppService : ILaserServiceCatalogAppServi
             request.MinDurationMinutes,
             request.MaxDurationMinutes,
             request.DisplayOrder,
+            request.Price,
             request.Notes,
             userId,
             DateTime.UtcNow);
         entity.SetActive(request.IsActive, userId, DateTime.UtcNow);
         await _db.SaveChangesAsync(cancellationToken);
         return Map(entity);
+    }
+
+    public async Task DeleteAsync(Guid id, string? userId, CancellationToken cancellationToken = default)
+    {
+        var entity = await _db.LaserServices.FirstOrDefaultAsync(s => s.Id == id, cancellationToken)
+            ?? throw new AppException("laser.service.not_found", "الخدمة غير موجودة.", 404);
+
+        var used = await _db.AppointmentServices.AnyAsync(s => s.LaserServiceId == id, cancellationToken);
+        if (used)
+            entity.SetActive(false, userId, DateTime.UtcNow);
+        else
+            _db.LaserServices.Remove(entity);
+
+        await _db.SaveChangesAsync(cancellationToken);
     }
 
     private static LaserServiceDto Map(LaserService s) =>
@@ -71,6 +87,7 @@ public sealed class LaserServiceCatalogAppService : ILaserServiceCatalogAppServi
             DurationCalculator.RecommendedMinutes(s),
             s.IsActive,
             s.DisplayOrder,
+            s.Price,
             s.Notes,
             DurationCalculator.RequiresManualDuration(s));
 }

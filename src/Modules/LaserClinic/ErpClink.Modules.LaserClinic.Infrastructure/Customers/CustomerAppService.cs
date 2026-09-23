@@ -117,14 +117,14 @@ public sealed class CustomerAppService : ICustomerAppService
 
     public async Task<CustomerDto> CreateAsync(CreateCustomerRequest request, string? userId, CancellationToken cancellationToken = default)
     {
-        var phone = request.PhoneNumber.Trim();
+        var phone = RequireEgyptianMobile(request.PhoneNumber);
         var duplicate = await _db.Customers.AnyAsync(
             c => c.IsActive && c.PhoneNumber == phone,
             cancellationToken);
         if (duplicate)
             throw new AppException("laser.customer.phone_exists", "رقم الهاتف مستخدم بالفعل.", 409);
 
-        var entity = Customer.Create(request.FullName, request.PhoneNumber, request.Age, request.Notes, userId, DateTime.UtcNow);
+        var entity = Customer.Create(request.FullName, phone, request.Age, request.Notes, userId, DateTime.UtcNow);
         _db.Customers.Add(entity);
         await _db.SaveChangesAsync(cancellationToken);
         return await MapAsync(entity, cancellationToken);
@@ -135,14 +135,14 @@ public sealed class CustomerAppService : ICustomerAppService
         var entity = await _db.Customers.FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
             ?? throw new AppException("laser.customer.not_found", "العميل غير موجود.", 404);
 
-        var phone = request.PhoneNumber.Trim();
+        var phone = RequireEgyptianMobile(request.PhoneNumber);
         var duplicate = await _db.Customers.AnyAsync(
             c => c.IsActive && c.PhoneNumber == phone && c.Id != id,
             cancellationToken);
         if (duplicate)
             throw new AppException("laser.customer.phone_exists", "رقم الهاتف مستخدم بالفعل.", 409);
 
-        entity.Update(request.FullName, request.PhoneNumber, request.Age, request.Notes, userId, DateTime.UtcNow);
+        entity.Update(request.FullName, phone, request.Age, request.Notes, userId, DateTime.UtcNow);
         await _db.SaveChangesAsync(cancellationToken);
         return await MapAsync(entity, cancellationToken);
     }
@@ -152,8 +152,21 @@ public sealed class CustomerAppService : ICustomerAppService
         var entity = await _db.Customers.FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
             ?? throw new AppException("laser.customer.not_found", "العميل غير موجود.", 404);
 
-        if (isActive) entity.Activate(userId, DateTime.UtcNow);
-        else entity.Deactivate(userId, DateTime.UtcNow);
+        if (isActive)
+        {
+            entity.Activate(userId, DateTime.UtcNow);
+        }
+        else
+        {
+            entity.Deactivate(userId, DateTime.UtcNow);
+            var now = DateTime.UtcNow;
+            var openAppointments = await _db.Appointments
+                .Where(a => a.CustomerId == id && a.Status != LaserAppointmentStatus.Cancelled)
+                .ToListAsync(cancellationToken);
+            foreach (var appointment in openAppointments)
+                appointment.ChangeStatus(LaserAppointmentStatus.Cancelled, userId, now);
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
     }
 
@@ -292,6 +305,17 @@ public sealed class CustomerAppService : ICustomerAppService
             durationTotal,
             durationUsed,
             remainingDuration);
+    }
+
+    private static string RequireEgyptianMobile(string phoneNumber)
+    {
+        var phone = Customer.NormalizeEgyptianMobile(phoneNumber);
+        if (phone is null)
+            throw new AppException(
+                "laser.customer.phone_invalid",
+                "رقم الموبايل لازم يكون مصري من 11 رقم ويبدأ بـ 010 أو 011 أو 012 أو 015.",
+                400);
+        return phone;
     }
 
     private async Task<CustomerDto> MapAsync(Customer c, CancellationToken cancellationToken) =>

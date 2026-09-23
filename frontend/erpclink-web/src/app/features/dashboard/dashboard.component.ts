@@ -15,15 +15,17 @@ import {
   LaserAppointmentStatus,
   LaserDashboardDto,
   formatDateAr,
-  formatTimeAr
+  formatTimeAr,
+  formatTimeRangeAr
 } from '../laser-clinic/models/laser-clinic.models';
 import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
 import { HasPermissionDirective } from '../../shared/directives/has-permission.directive';
+import { TimeSpanComponent } from '../../shared/components/time-span/time-span.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, LoadingSpinnerComponent, HasPermissionDirective, DecimalPipe],
+  imports: [ReactiveFormsModule, RouterLink, LoadingSpinnerComponent, HasPermissionDirective, DecimalPipe, TimeSpanComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -84,7 +86,7 @@ export class DashboardComponent implements OnInit {
     const last = row.lastAppointment;
     if (!last) return 'لا يوجد حجز سابق';
     const services = last.serviceNames?.length ? last.serviceNames.join(' + ') : '—';
-    return `${this.formatDateAr(last.date)} · ${this.formatTimeAr(last.startTime)} · ${services}`;
+    return `${this.formatDateAr(last.date)} · ${formatTimeRangeAr(last.startTime, last.endTime)} · ${services}`;
   }
 
   statusLabel(status: LaserAppointmentStatus): string {

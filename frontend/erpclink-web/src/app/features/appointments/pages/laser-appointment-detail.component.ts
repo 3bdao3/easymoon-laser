@@ -1,102 +1,128 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Permissions } from '../../../core/permissions/permissions';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subject, debounceTime, takeUntil } from 'rxjs';
+import { CustomersApi } from '../../laser-clinic/services/customers-api.service';
 import { LaserAppointmentsApi } from '../../laser-clinic/services/laser-appointments-api.service';
+import { LaserServicesApi } from '../../laser-clinic/services/laser-services-api.service';
 import {
-  CustomerPulseBalanceDto,
-  LASER_APPOINTMENT_STATUS_BADGE,
-  LASER_APPOINTMENT_STATUS_LABELS,
-  LaserAppointmentDto,
-  LaserAppointmentStatus,
+  CustomerDto,
+  LaserServiceDto,
   SessionDetailDto,
+  LaserAppointmentDto,
   appointmentPulsesConsumed,
   formatDateAr,
-  formatTimeAr
+  toApiTime
 } from '../../laser-clinic/models/laser-clinic.models';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
-import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ToastService } from '../../../core/services/toast.service';
-import { ConfirmService } from '../../../shared/components/confirm-dialog/confirm.service';
 
 @Component({
   selector: 'app-laser-appointment-detail',
   standalone: true,
-  imports: [
-    RouterLink,
-    ReactiveFormsModule,
-    PageHeaderComponent,
-    LoadingSpinnerComponent,
-    HasPermissionDirective
-  ],
+  imports: [ReactiveFormsModule, PageHeaderComponent, LoadingSpinnerComponent],
   templateUrl: './laser-appointment-detail.component.html',
   styleUrl: './laser-appointment-detail.component.scss'
 })
-export class LaserAppointmentDetailComponent implements OnInit {
+export class LaserAppointmentDetailComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly api = inject(LaserAppointmentsApi);
+  private readonly customersApi = inject(CustomersApi);
+  private readonly servicesApi = inject(LaserServicesApi);
   private readonly toast = inject(ToastService);
-  private readonly confirm = inject(ConfirmService);
+  private readonly destroy$ = new Subject<void>();
 
-  readonly permissions = Permissions;
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly scheduling = signal(false);
   readonly detail = signal<SessionDetailDto | null>(null);
-  readonly pulsesDraft = signal<number | null>(null);
+  readonly customer = signal<CustomerDto | null>(null);
+  readonly catalog = signal<LaserServiceDto[]>([]);
+  readonly amountInput = signal<number | null>(null);
+  readonly pulsesInput = signal<number | null>(null);
+  readonly nextId = signal<string | null>(null);
   readonly formatDateAr = formatDateAr;
-  readonly formatTimeAr = formatTimeAr;
+  readonly minDate = new Date().toISOString().slice(0, 10);
 
   readonly form = new FormGroup({
-    pulsesConsumed: new FormControl<number | null>(null, {
-      validators: [Validators.min(1), Validators.max(5000)]
-    }),
-    durationMinutes: new FormControl<number | null>(null, {
-      nonNullable: false,
-      validators: [Validators.required, Validators.min(1), Validators.max(480)]
-    }),
-    amountPaid: new FormControl<number | null>(null, {
-      validators: [Validators.min(0)]
-    }),
-    packagePrice: new FormControl<number | null>(null, {
-      validators: [Validators.min(0)]
-    })
-  });
-
-  readonly needsPackagePrice = computed(() => {
-    const bal = this.pulseBalance();
-    return this.hasPulsePackage() && (bal?.packagePriceTotal == null);
+    amountPaid: new FormControl<number | null>(null, { validators: [Validators.min(0)] }),
+    pulsesConsumed: new FormControl<number | null>(null, { validators: [Validators.min(1), Validators.max(5000)] }),
+    nextDate: new FormControl('', { nonNullable: true }),
+    nextTime: new FormControl('', { nonNullable: true })
   });
 
   readonly item = computed(() => this.detail()?.appointment ?? null);
-  readonly pulseBalance = computed(() => this.detail()?.pulseBalance ?? null);
-  readonly totalAmountPaid = computed(() => this.detail()?.totalAmountPaid ?? 0);
-  readonly availablePulses = computed(() => this.detail()?.availablePulses ?? 0);
+  readonly pulseBalance = computed(() => this.detail()?.pulseBalance ?? this.customer()?.pulseBalance ?? null);
 
-  readonly hasPulsePackage = computed(() => {
-    const a = this.item();
-    if (!a) return false;
-    return a.services.some((s) => s.serviceName.includes('نبضة'));
+  readonly isPulseSession = computed(() => {
+    const names = this.item()?.services.map((s) => s.serviceName).join(' ') ?? '';
+    return names.includes('نبضة') || this.pulseBalance()?.packageTotal != null;
   });
 
-  /** Remaining after applying the entered pulses (uses available = remaining + this session's prior record). */
-  readonly remainingAfterSave = computed(() => {
-    const balance = this.pulseBalance();
-    if (!balance || balance.packageTotal == null) {
+  readonly dueAmount = computed(() => {
+    const packagePrice = this.pulseBalance()?.packagePriceTotal;
+    if (packagePrice != null && packagePrice > 0) {
+      return packagePrice;
+    }
+    const lines = this.item()?.services ?? [];
+    const catalog = this.catalog();
+    if (!lines.length || !catalog.length) {
       return null;
     }
-    const baseRemaining = this.availablePulses();
-    const entered = this.pulsesDraft();
-    if (entered == null || entered < 1) {
-      return baseRemaining;
-    }
-    return Math.max(0, baseRemaining - entered);
+    return lines.reduce((sum, line) => sum + (catalog.find((service) => service.id === line.laserServiceId)?.price ?? 0), 0);
   });
 
-  readonly packageTotal = computed(() => this.pulseBalance()?.packageTotal ?? null);
+  readonly pulsesBefore = computed(() => {
+    const balance = this.pulseBalance();
+    const saved = this.item() ? appointmentPulsesConsumed(this.item()!) ?? 0 : 0;
+    if (balance?.remaining == null && balance?.packageTotal == null) {
+      return null;
+    }
+    return (balance?.remaining ?? 0) + saved;
+  });
+
+  readonly pulsesLeft = computed(() => {
+    const before = this.pulsesBefore();
+    if (before == null) {
+      return null;
+    }
+    const used = this.pulsesInput();
+    if (used == null || used < 1) {
+      return before;
+    }
+    return before - used;
+  });
+
+  readonly moneyBefore = computed(() => {
+    const owed = this.dueAmount();
+    if (owed == null) {
+      return null;
+    }
+    const paidAll = this.pulseBalance()?.amountPaid ?? 0;
+    const paidThis = this.item()?.amountPaid ?? 0;
+    return Math.max(0, owed - (paidAll - paidThis));
+  });
+
+  readonly moneyLeft = computed(() => {
+    const before = this.moneyBefore();
+    if (before == null) {
+      return null;
+    }
+    const pay = this.amountInput() ?? 0;
+    return Math.max(0, before - pay);
+  });
 
   ngOnInit(): void {
+    this.form.valueChanges.pipe(takeUntil(this.destroy$)).subscribe((value) => {
+      this.amountInput.set(value.amountPaid ?? null);
+      this.pulsesInput.set(value.pulsesConsumed ?? null);
+    });
+
+    this.form.controls.nextDate.valueChanges.pipe(debounceTime(400), takeUntil(this.destroy$)).subscribe(() => this.scheduleNext());
+    this.form.controls.nextTime.valueChanges.pipe(debounceTime(400), takeUntil(this.destroy$)).subscribe(() => this.scheduleNext());
+
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
       void this.router.navigate(['/app/appointments']);
@@ -105,152 +131,196 @@ export class LaserAppointmentDetailComponent implements OnInit {
     this.load(id);
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   load(id: string): void {
     this.loading.set(true);
+    this.servicesApi.list(false).subscribe({
+      next: (rows) => this.catalog.set(rows),
+      error: () => this.catalog.set([])
+    });
     this.api.getSession(id).subscribe({
       next: (row) => {
         this.detail.set(row);
-        this.patchForm(row.appointment, row.pulseBalance, row.availablePulses);
-        this.loading.set(false);
+        const savedPulses = appointmentPulsesConsumed(row.appointment);
+        this.form.patchValue(
+          {
+            amountPaid: row.appointment.amountPaid ?? null,
+            pulsesConsumed: savedPulses
+          },
+          { emitEvent: false }
+        );
+        this.amountInput.set(row.appointment.amountPaid ?? null);
+        this.pulsesInput.set(savedPulses);
+        this.customersApi.getById(row.appointment.customerId).subscribe({
+          next: (customer) => {
+            this.customer.set(customer);
+            this.loading.set(false);
+          },
+          error: () => this.loading.set(false)
+        });
       },
       error: () => {
         this.loading.set(false);
-        this.toast.error('تعذّر تحميل تفاصيل الجلسة');
+        this.toast.error('تعذّر تحميل الجلسة');
         void this.router.navigate(['/app/appointments']);
       }
     });
   }
 
-  private patchForm(a: LaserAppointmentDto, balance: CustomerPulseBalanceDto, availablePulses: number): void {
-    const recorded = appointmentPulsesConsumed(a);
-    // New session / not recorded yet → default to remaining (available) pulses.
-    const defaultPulses = recorded ?? (availablePulses > 0 ? availablePulses : null);
-    this.pulsesDraft.set(defaultPulses);
-    this.form.patchValue({
-      pulsesConsumed: defaultPulses,
-      durationMinutes: a.durationMinutes > 0 ? a.durationMinutes : null,
-      amountPaid: a.amountPaid ?? null,
-      packagePrice: balance.packagePriceTotal ?? null
-    });
-    if (a.services.some((s) => s.serviceName.includes('نبضة'))) {
-      this.form.controls.pulsesConsumed.setValidators([
-        Validators.required,
-        Validators.min(1),
-        Validators.max(5000)
-      ]);
-    } else {
-      this.form.controls.pulsesConsumed.clearValidators();
+  money(value: number | null | undefined): string {
+    if (value == null || Number.isNaN(Number(value))) {
+      return '—';
     }
-    this.form.controls.pulsesConsumed.updateValueAndValidity({ emitEvent: false });
+    return `${value} ج.م`;
   }
 
-  onPulsesInput(): void {
-    const raw = this.form.controls.pulsesConsumed.value;
-    const n = Number(raw);
-    this.pulsesDraft.set(Number.isFinite(n) && n > 0 ? Math.round(n) : null);
-  }
-
-  statusLabel(status: LaserAppointmentStatus): string {
-    return LASER_APPOINTMENT_STATUS_LABELS[status];
-  }
-
-  badgeClass(status: LaserAppointmentStatus): string {
-    return LASER_APPOINTMENT_STATUS_BADGE[status];
-  }
-
-  save(): void {
-    const a = this.item();
-    if (!a) return;
-    if (this.form.invalid) {
+  saveSession(): void {
+    const appt = this.item();
+    if (!appt || !this.canRecord()) {
       this.form.markAllAsTouched();
-      this.toast.error('أكملي مدة الجلسة وعدد النبضات والمبلغ إن لزم');
+      this.toast.error(this.isPulseSession() ? 'اكتب المبلغ وعدد نبضات الجلسة' : 'اكتب المبلغ');
       return;
     }
-
-    const raw = this.form.getRawValue();
-    const durationMinutes = Number(raw.durationMinutes);
-    const pulsesConsumed =
-      raw.pulsesConsumed != null && Number(raw.pulsesConsumed) > 0 ? Math.round(Number(raw.pulsesConsumed)) : null;
-    const amountRaw = raw.amountPaid;
-    const amountPaid =
-      amountRaw != null && `${amountRaw}`.trim() !== '' && Number.isFinite(Number(amountRaw))
-        ? Number(amountRaw)
-        : null;
-    const packagePriceRaw = raw.packagePrice;
-    const packagePrice =
-      packagePriceRaw != null && `${packagePriceRaw}`.trim() !== '' && Number.isFinite(Number(packagePriceRaw))
-        ? Number(packagePriceRaw)
-        : null;
-
-    if (this.hasPulsePackage() && (pulsesConsumed == null || pulsesConsumed < 1)) {
-      this.toast.error('أدخلي عدد النبضات المستهلكة في الجلسة');
-      return;
-    }
-
-    if (this.needsPackagePrice() && (packagePrice == null || packagePrice < 0)) {
-      this.toast.error('أدخلي سعر الباكدج الإجمالي (مثال: 1000)');
-      return;
-    }
-
-    if (this.hasPulsePackage() && pulsesConsumed != null) {
-      const available = this.availablePulses();
-      if (pulsesConsumed > available) {
-        this.toast.error(`النبضات أكبر من المتبقي (متاح: ${available})`);
-        return;
-      }
-    }
-
     this.saving.set(true);
+    this.recordCurrent(appt.id, () => {
+      this.saving.set(false);
+      this.toast.success('اتحفظت الجلسة');
+      this.refreshNextNotes();
+    });
+  }
+
+  back(): void {
+    void this.router.navigate(['/app/appointments']);
+  }
+
+  private canRecord(): boolean {
+    const amount = this.form.controls.amountPaid.value;
+    if (amount == null || amount < 0) {
+      return false;
+    }
+    if (!this.isPulseSession()) {
+      return true;
+    }
+    const pulses = this.form.controls.pulsesConsumed.value;
+    return pulses != null && pulses >= 1 && (this.pulsesLeft() ?? 0) >= 0;
+  }
+
+  private scheduleNext(): void {
+    const appt = this.item();
+    const date = this.form.controls.nextDate.value;
+    const time = this.form.controls.nextTime.value;
+    if (!appt || !date || !time || this.scheduling()) {
+      return;
+    }
+    if (!this.canRecord()) {
+      this.toast.error('اكتب المبلغ وعدد النبضات الأول، وبعدين التاريخ والوقت');
+      return;
+    }
+    if ((this.pulsesLeft() ?? 0) < 0) {
+      this.toast.error('نبضات الجلسة أكبر من المتبقي');
+      return;
+    }
+
+    this.scheduling.set(true);
+    this.recordCurrent(appt.id, () => this.createOrUpdateNext(appt, date, time));
+  }
+
+  private recordCurrent(id: string, done: () => void): void {
+    const appt = this.item();
+    const duration = appt && appt.durationMinutes > 0 ? appt.durationMinutes : 30;
+    const pulses = this.isPulseSession() ? this.form.controls.pulsesConsumed.value : null;
     this.api
-      .recordSession(a.id, {
-        durationMinutes: Math.round(durationMinutes),
-        pulsesConsumed,
-        amountPaid: amountPaid != null && Number.isFinite(amountPaid) ? amountPaid : null,
-        packagePrice: this.needsPackagePrice() ? packagePrice : null,
+      .recordSession(id, {
+        durationMinutes: duration,
+        pulsesConsumed: pulses,
+        amountPaid: this.form.controls.amountPaid.value,
         markAttended: true
       })
       .subscribe({
-        next: (row) => {
-          this.detail.set(row);
-          this.patchForm(row.appointment, row.pulseBalance, row.availablePulses);
-          this.saving.set(false);
-          this.toast.success(
-            `تم حفظ الجلسة — المتبقي ${row.pulseBalance.remaining ?? 0} من ${row.pulseBalance.packageTotal ?? '—'}`
-          );
+        next: (result) => {
+          this.detail.set(result);
+          done();
         },
         error: (err) => {
           this.saving.set(false);
-          const msg =
-            err?.error?.detail || err?.error?.title || err?.error?.message || 'تعذّر حفظ الجلسة';
+          this.scheduling.set(false);
+          const msg = err?.error?.detail || err?.error?.title || err?.error?.message || 'تعذّر حفظ الجلسة';
           this.toast.error(msg);
         }
       });
   }
 
-  async cancel(): Promise<void> {
-    const row = this.item();
-    if (!row) return;
-    const ok = await this.confirm.confirm({
-      title: 'إلغاء الجلسة',
-      message: `إلغاء جلسة ${row.customerName}؟`,
-      variant: 'danger',
-      confirmLabel: 'إلغاء الجلسة'
-    });
-    if (!ok) return;
-    this.api.cancel(row.id).subscribe({
-      next: () => {
-        this.toast.success('تم إلغاء الجلسة');
-        void this.router.navigate(['/app/customers', row.customerId, 'edit']);
+  private createOrUpdateNext(appt: LaserAppointmentDto, date: string, time: string): void {
+    const notes = this.leftoverNote();
+    const laserServiceIds = appt.services.map((s) => s.laserServiceId);
+    const serviceDurationOverrides = appt.services.map((s) => ({
+      serviceId: s.laserServiceId,
+      durationMinutes: s.durationMinutes > 0 ? s.durationMinutes : appt.durationMinutes || 30,
+      pulsesConsumed: null
+    }));
+    const body = {
+      appointmentDate: date,
+      startTime: toApiTime(time),
+      laserServiceIds,
+      notes,
+      serviceDurationOverrides
+    };
+    const existing = this.nextId();
+    const request = existing
+      ? this.api.update(existing, body)
+      : this.api.create({ customerId: appt.customerId, ...body });
+
+    request.subscribe({
+      next: (created) => {
+        const createdNow = !existing;
+        this.nextId.set(created.id);
+        this.scheduling.set(false);
+        this.saving.set(false);
+        if (createdNow) {
+          this.toast.success('اتعملت الجلسة الجاية واتكتب فيها المتبقي');
+        }
+      },
+      error: (err) => {
+        this.scheduling.set(false);
+        this.saving.set(false);
+        const msg = err?.error?.detail || err?.error?.title || err?.error?.message || 'المعاد ده مش متاح، اختار وقت تاني';
+        this.toast.error(msg);
       }
     });
   }
 
-  backToCustomer(): void {
-    const a = this.item();
-    if (a) {
-      void this.router.navigate(['/app/customers', a.customerId, 'edit']);
-    } else {
-      void this.router.navigate(['/app/customers']);
+  private refreshNextNotes(): void {
+    const id = this.nextId();
+    const appt = this.item();
+    const date = this.form.controls.nextDate.value;
+    const time = this.form.controls.nextTime.value;
+    if (!id || !appt || !date || !time) {
+      return;
     }
+    this.api
+      .update(id, {
+        appointmentDate: date,
+        startTime: toApiTime(time),
+        laserServiceIds: appt.services.map((s) => s.laserServiceId),
+        notes: this.leftoverNote(),
+        serviceDurationOverrides: appt.services.map((s) => ({
+          serviceId: s.laserServiceId,
+          durationMinutes: s.durationMinutes > 0 ? s.durationMinutes : appt.durationMinutes || 30,
+          pulsesConsumed: null
+        }))
+      })
+      .subscribe({ error: () => undefined });
+  }
+
+  private leftoverNote(): string {
+    const pulses = this.pulsesLeft();
+    const money = this.moneyLeft();
+    const pulseLine = pulses == null ? 'متبقي النبضات: —' : `متبقي النبضات: ${pulses}`;
+    const moneyLine = money == null ? 'متبقي الفلوس: —' : `متبقي الفلوس: ${money} ج.م`;
+    return `${pulseLine}\n${moneyLine}`;
   }
 }

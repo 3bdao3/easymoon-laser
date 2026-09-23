@@ -13,7 +13,7 @@ export class ApiErrorService {
 
     switch (error.status) {
       case 0:
-        return 'تعذر الاتصال بالخادم. تأكد أن الـ API يعمل على http://localhost:5284 وأن Angular يعمل عبر npm start.';
+        return 'تعذر الاتصال بالخادم. تأكد أن التطبيق يعمل ثم أعد المحاولة.';
       case 400:
         return 'طلب غير صالح. تحقق من البيانات المدخلة.';
       case 401:

@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { Permissions } from '../../../core/permissions/permissions';
@@ -21,11 +22,12 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner.component';
 import { HasPermissionDirective } from '../../../shared/directives/has-permission.directive';
 import { ToastService } from '../../../core/services/toast.service';
+import { TimeSpanComponent } from '../../../shared/components/time-span/time-span.component';
 
 @Component({
   selector: 'app-customer-detail',
   standalone: true,
-  imports: [RouterLink, PageHeaderComponent, LoadingSpinnerComponent, HasPermissionDirective],
+  imports: [FormsModule, RouterLink, PageHeaderComponent, LoadingSpinnerComponent, HasPermissionDirective, TimeSpanComponent],
   templateUrl: './customer-detail.component.html',
   styles: `
     .detail-head {
@@ -74,6 +76,15 @@ import { ToastService } from '../../../core/services/toast.service';
       margin-top: var(--space-3);
       margin-bottom: 0;
       font-size: var(--text-sm);
+    }
+    .session-history-hint {
+      margin-top: calc(var(--space-2) * -1);
+      margin-bottom: var(--space-4);
+    }
+    .session-history-total {
+      margin: var(--space-4) 0 0;
+      font-weight: 800;
+      color: var(--color-primary-hover);
     }
     @media (max-width: 40rem) {
       .detail-head {
@@ -136,6 +147,10 @@ export class CustomerDetailComponent implements OnInit {
     });
   });
 
+  readonly totalPastPaid = computed(() =>
+    this.pastAppointments().reduce((sum, row) => sum + (row.amountPaid ?? 0), 0)
+  );
+
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
@@ -167,7 +182,7 @@ export class CustomerDetailComponent implements OnInit {
     return LASER_APPOINTMENT_STATUS_BADGE[status];
   }
 
-  onNextStatusChange(appt: LaserAppointmentDto, raw: string): void {
+  onNextStatusChange(appt: LaserAppointmentDto, raw: LaserAppointmentStatus | string): void {
     const status = Number(raw) as LaserAppointmentStatus;
     if (status === appt.status) {
       return;
@@ -185,8 +200,10 @@ export class CustomerDetailComponent implements OnInit {
         this.updatingStatus.set(false);
         this.toast.success('تم تحديث الحالة');
       },
-      error: () => {
+      error: (err) => {
         this.updatingStatus.set(false);
+        const detail = err?.error?.detail || err?.error?.title || err?.error?.message;
+        this.toast.error(detail || 'تسجيل «حضرت» يتم في يوم الموعد وبعد وقت البداية فقط.');
         const id = this.customer()?.id;
         if (id) {
           this.reload(id);
@@ -196,7 +213,14 @@ export class CustomerDetailComponent implements OnInit {
   }
 
   serviceNames(row: LaserAppointmentDto): string {
-    return row.services.map((s) => s.serviceName).join(' + ');
+    return row.services.map((s) => s.serviceName).join(' + ') || '—';
+  }
+
+  money(value: number | null | undefined): string {
+    if (value == null || Number.isNaN(Number(value))) {
+      return '—';
+    }
+    return `${value} ج.م`;
   }
 
   dayHint(isoDate: string): string | null {

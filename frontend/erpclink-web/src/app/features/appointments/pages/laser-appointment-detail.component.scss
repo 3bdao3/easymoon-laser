@@ -142,6 +142,59 @@
   font-size: var(--text-sm);
 }
 
+.session-pay {
+  max-width: 40rem;
+}
+
+.remain-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.next-ready {
+  margin-top: var(--space-3);
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.booking-receipt {
+  max-width: 36rem;
+}
+
+.receipt-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.receipt-list div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.receipt-list dt {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.receipt-list dd {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
 .session-actions {
   margin-top: var(--space-5);
+}
+
+.prior-sessions {
+  margin-top: var(--space-4);
+}
+
+.prior-sessions__total {
+  margin: var(--space-4) 0 0;
+  font-weight: 800;
+  color: var(--primary-dark);
 }

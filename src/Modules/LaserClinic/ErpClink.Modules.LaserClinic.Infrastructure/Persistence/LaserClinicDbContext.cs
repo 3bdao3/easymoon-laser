@@ -44,6 +44,7 @@ public sealed class LaserClinicDbContext : DbContext
             b.Ignore(x => x.DomainEvents);
             b.Property(x => x.Name).HasMaxLength(200).IsRequired();
             b.Property(x => x.Notes).HasMaxLength(1000);
+            b.Property(x => x.Price).HasPrecision(18, 2);
             b.HasIndex(x => x.DisplayOrder);
         });
 

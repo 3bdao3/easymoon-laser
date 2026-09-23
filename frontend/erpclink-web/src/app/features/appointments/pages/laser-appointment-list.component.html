@@ -45,22 +45,25 @@
                 <a class="link" [routerLink]="[row.id]">{{ row.customerName }}</a>
               </td>
               <td data-label="الهاتف">{{ row.customerPhone }}</td>
-              <td data-label="المدة">{{ row.durationMinutes }} د</td>
+              <td data-label="المدة">
+                <app-time-span [start]="row.startTime" [end]="row.endTime" />
+              </td>
               <td data-label="الخدمات">{{ serviceNames(row) }}</td>
               <td data-label="الحالة">
                 <span class="badge" [class]="badgeClass(row.status)">{{ statusLabel(row.status) }}</span>
               </td>
               <td class="table-cards__actions" data-label="">
                 <div class="row-actions">
-                  <a class="btn btn--ghost btn--sm" [routerLink]="[row.id]">تفاصيل</a>
+                  <a class="btn btn--ghost btn--sm" [routerLink]="[row.id]">فتح الجلسة</a>
                   <select
                     class="form-field__select status-select"
                     *appHasPermission="permissions.LaserAppointmentsUpdate"
-                    [value]="row.status"
-                    (change)="onStatusChange(row, $any($event.target).value)"
+                    [ngModel]="row.status"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="onStatusChange(row, $event)"
                   >
                     @for (s of statuses; track s) {
-                      <option [value]="s">{{ statusLabel(s) }}</option>
+                      <option [ngValue]="s">{{ statusLabel(s) }}</option>
                     }
                   </select>
                   <button

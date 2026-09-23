@@ -93,14 +93,18 @@ public sealed class LaserAppointmentAppService : ILaserAppointmentAppService
                 if (request.Customer is null)
                     throw new AppException("laser.appointment.customer_required", "يجب اختيار عميل.", 400);
 
-                var phone = request.Customer.PhoneNumber.Trim();
+                var phone = Domain.Customers.Customer.NormalizeEgyptianMobile(request.Customer.PhoneNumber)
+                    ?? throw new AppException(
+                        "laser.customer.phone_invalid",
+                        "رقم الموبايل لازم يكون مصري من 11 رقم ويبدأ بـ 010 أو 011 أو 012 أو 015.",
+                        400);
                 var duplicate = await _db.Customers.AnyAsync(c => c.IsActive && c.PhoneNumber == phone, cancellationToken);
                 if (duplicate)
                     throw new AppException("laser.customer.phone_exists", "رقم الهاتف مستخدم بالفعل.", 409);
 
                 var customer = Domain.Customers.Customer.Create(
                     request.Customer.FullName,
-                    request.Customer.PhoneNumber,
+                    phone,
                     request.Customer.Age,
                     request.Customer.Notes,
                     userId,
@@ -183,6 +187,9 @@ public sealed class LaserAppointmentAppService : ILaserAppointmentAppService
     {
         var entity = await _db.Appointments.Include(a => a.Services).FirstOrDefaultAsync(a => a.Id == id, cancellationToken)
             ?? throw new AppException("laser.appointment.not_found", "الموعد غير موجود.", 404);
+
+        if (status == LaserAppointmentStatus.Attended && entity.Status != LaserAppointmentStatus.Attended)
+            EnsureAttendedOnAppointmentDay(entity);
 
         entity.ChangeStatus(status, userId, DateTime.UtcNow);
         await _db.SaveChangesAsync(cancellationToken);
@@ -468,7 +475,7 @@ public sealed class LaserAppointmentAppService : ILaserAppointmentAppService
                 customer.SetPackagePrice(request.PackagePrice.Value, userId, DateTime.UtcNow);
         }
 
-        if (request.MarkAttended && entity.Status is not LaserAppointmentStatus.Attended)
+        if (request.MarkAttended && entity.Status is not LaserAppointmentStatus.Attended && IsAttendedWindow(entity))
             entity.ChangeStatus(LaserAppointmentStatus.Attended, userId, DateTime.UtcNow);
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -527,7 +534,9 @@ public sealed class LaserAppointmentAppService : ILaserAppointmentAppService
     }
 
     private IQueryable<LaserAppointment> BaseQuery() =>
-        _db.Appointments.AsNoTracking().Include(a => a.Services);
+        _db.Appointments.AsNoTracking()
+            .Include(a => a.Services)
+            .Where(a => _db.Customers.Any(c => c.Id == a.CustomerId && c.IsActive));
 
     private sealed record LineOverride(int DurationMinutes, int? PulsesConsumed);
 
@@ -749,7 +758,8 @@ public sealed class LaserAppointmentAppService : ILaserAppointmentAppService
             .Where(a => a.AppointmentDate == date
                         && (a.Status == LaserAppointmentStatus.Pending
                             || a.Status == LaserAppointmentStatus.Confirmed
-                            || a.Status == LaserAppointmentStatus.Attended));
+                            || a.Status == LaserAppointmentStatus.Attended)
+                        && _db.Customers.Any(c => c.Id == a.CustomerId && c.IsActive));
         if (excludeId.HasValue)
             q = q.Where(a => a.Id != excludeId.Value);
 
@@ -784,6 +794,26 @@ public sealed class LaserAppointmentAppService : ILaserAppointmentAppService
                 a.DurationMinutes,
                 names.Count == 0 ? null : string.Join(" + ", names));
         }).ToList();
+    }
+
+    private static void EnsureAttendedOnAppointmentDay(LaserAppointment entity)
+    {
+        if (IsAttendedWindow(entity))
+            return;
+
+        throw new AppException(
+            "laser.appointment.attended_time",
+            "تسجيل «حضرت» يتم في يوم الموعد وبعد وقت البداية فقط. يمكنك تغيير الحالة إلى أي حالة أخرى في أي وقت.",
+            400);
+    }
+
+    private static bool IsAttendedWindow(LaserAppointment entity)
+    {
+        var now = GetEgyptNow();
+        if (DateOnly.FromDateTime(now) != entity.AppointmentDate)
+            return false;
+
+        return TimeOnly.FromDateTime(now) >= entity.StartTime;
     }
 
     private static DateTime GetEgyptNow()

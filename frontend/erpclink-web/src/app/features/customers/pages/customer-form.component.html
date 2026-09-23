@@ -19,7 +19,16 @@
         </label>
         <label class="form-field">
           <span class="form-field__label">رقم الهاتف</span>
-          <input class="form-field__input" formControlName="phoneNumber" placeholder="01012345678" />
+          <input
+            class="form-field__input"
+            formControlName="phoneNumber"
+            inputmode="numeric"
+            maxlength="14"
+            placeholder="01012345678"
+          />
+          @if (profileForm.controls.phoneNumber.touched && profileForm.controls.phoneNumber.hasError('egyptMobile')) {
+            <span class="form-field__error">رقم موبايل مصري من 11 رقم: 010 أو 011 أو 012 أو 015</span>
+          }
         </label>
         <label class="form-field">
           <span class="form-field__label">العمر</span>
@@ -127,9 +136,11 @@
               }
               <span class="service-chip__icon">♡</span>
               <span class="service-chip__name">{{ s.name }}</span>
+              <span class="service-chip__price">{{ s.price }} ج.م</span>
               <span class="service-chip__duration">{{ durationLabel(s) }}</span>
             </button>
           }
+          <app-laser-service-admin-card (catalogChanged)="loadServices()" />
         </div>
         <div class="duration-summary">
           <span class="duration-summary__label">مدة الجلسة المتوقعة</span>
@@ -197,7 +208,7 @@
           <span class="form-field__label">حالة الحجز</span>
           <select class="form-field__select" [formControl]="appointmentStatus">
             @for (s of editableStatuses; track s) {
-              <option [value]="s">{{ statusLabel(s) }}</option>
+              <option [ngValue]="s">{{ statusLabel(s) }}</option>
             }
           </select>
         </label>
@@ -318,7 +329,9 @@
                   <td data-label="التاريخ">{{ formatDateAr(s.appt.appointmentDate) }}</td>
                   <td data-label="من">{{ formatTimeAr(s.appt.startTime) }}</td>
                   <td data-label="إلى">{{ formatTimeAr(s.appt.endTime) }}</td>
-                  <td data-label="المدة">{{ s.appt.durationMinutes }} د</td>
+                  <td data-label="المدة">
+                    <app-time-span [start]="s.appt.startTime" [end]="s.appt.endTime" />
+                  </td>
                   <td data-label="نبضات الجلسة">{{ s.pulses != null ? s.pulses : '—' }}</td>
                   <td data-label="المدفوع">{{ s.appt.amountPaid != null ? s.appt.amountPaid : '—' }}</td>
                   <td data-label="الحالة">

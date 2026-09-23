@@ -74,7 +74,11 @@ builder.Services.AddLaserClinicModule(builder.Configuration);
 
 var app = builder.Build();
 
+var spaIndexPath = Path.Combine(app.Environment.WebRootPath ?? string.Empty, "index.html");
+var hostAngularSpa = File.Exists(spaIndexPath);
+
 if (!app.Environment.IsDevelopment()
+    && !hostAngularSpa
     && string.IsNullOrWhiteSpace(builder.Configuration["FRONTEND_URL"]))
 {
     app.Logger.LogWarning(
@@ -90,12 +94,13 @@ if (app.Environment.IsDevelopment())
 }
 
 // CORS must run in all environments (JWT uses Authorization header; origin is restricted via FRONTEND_URL).
+// Same-origin RunASP hosting does not need a production origin: the browser calls /api on this site.
 app.UseCors("AppCors");
 
-// Render terminates TLS at the edge and forwards HTTP to the container — skip HTTPS redirection in Production.
-if (app.Environment.IsDevelopment())
+if (hostAngularSpa)
 {
-    // no-op: local HTTPS handled by launchSettings if used
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
 }
 
 app.UseAuthentication();
@@ -111,6 +116,24 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 });
 
 app.MapControllers();
+
+if (hostAngularSpa)
+{
+    app.MapFallback(async context =>
+    {
+        var path = context.Request.Path.Value ?? string.Empty;
+        if (path.StartsWith("/api", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/health", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
+        context.Response.ContentType = "text/html; charset=utf-8";
+        await context.Response.SendFileAsync(spaIndexPath);
+    });
+}
 
 await AdministrationDbSeeder.SeedAsync(app.Services);
 await app.Services.MigrateLaserClinicModuleAsync();

@@ -9,22 +9,22 @@ namespace ErpClink.Modules.LaserClinic.Infrastructure.Persistence;
 
 public static class LaserClinicDbSeeder
 {
-    private static readonly (string Name, int Min, int Max, int Order)[] Catalog =
+    private static readonly (string Name, int Min, int Max, int Order, decimal Price)[] Catalog =
     [
-        ("فيس ورقبة", 10, 10, 1),
-        ("بكيني", 5, 5, 2),
-        ("بكيني + لاين + أندر آرم", 15, 15, 3),
-        ("نصف ذراع", 15, 15, 4),
-        ("ذراع كامل", 25, 25, 5),
-        ("نصف رجل", 20, 20, 6),
-        ("نصف رجل علوي", 30, 30, 7),
-        ("رجل كامل", 30, 45, 8),
-        ("نصف جسم", 30, 40, 9),
-        ("جسم كامل بدون بطن وظهر", 60, 60, 10),
-        ("جسم كامل + بطن وظهر", 60, 75, 11),
-        ("جسم كامل + بطن وظهر + فيس ورقبة", 75, 90, 12),
-        ("1000 نبضة", 15, 15, 13),
-        ("5000 نبضة", 45, 45, 14)
+        ("فيس ورقبة", 10, 10, 1, 200m),
+        ("بكيني", 5, 5, 2, 150m),
+        ("بكيني + لاين + أندر آرم", 15, 15, 3, 350m),
+        ("نصف ذراع", 15, 15, 4, 200m),
+        ("ذراع كامل", 25, 25, 5, 300m),
+        ("نصف رجل", 20, 20, 6, 250m),
+        ("نصف رجل علوي", 30, 30, 7, 300m),
+        ("رجل كامل", 30, 45, 8, 450m),
+        ("نصف جسم", 30, 40, 9, 500m),
+        ("جسم كامل بدون بطن وظهر", 60, 60, 10, 700m),
+        ("جسم كامل + بطن وظهر", 60, 75, 11, 900m),
+        ("جسم كامل + بطن وظهر + فيس ورقبة", 75, 90, 12, 1100m),
+        ("1000 نبضة", 15, 15, 13, 400m),
+        ("5000 نبضة", 45, 45, 14, 1500m)
     ];
 
     public static async Task SeedAsync(IServiceProvider services, CancellationToken cancellationToken = default)
@@ -43,9 +43,9 @@ public static class LaserClinicDbSeeder
         if (!await db.LaserServices.AnyAsync(cancellationToken))
         {
             var utc = DateTime.UtcNow;
-            foreach (var (name, min, max, order) in Catalog)
+            foreach (var (name, min, max, order, price) in Catalog)
             {
-                db.LaserServices.Add(LaserService.Create(name, min, max, order, null, "system", utc));
+                db.LaserServices.Add(LaserService.Create(name, min, max, order, price, null, "system", utc));
             }
 
             await db.SaveChangesAsync(cancellationToken);
@@ -62,17 +62,19 @@ public static class LaserClinicDbSeeder
             var match = existing.FirstOrDefault(s => s.Name == def.Name);
             if (match is null)
             {
-                db.LaserServices.Add(LaserService.Create(def.Name, def.Min, def.Max, def.Order, null, "system", utcNow));
+                db.LaserServices.Add(LaserService.Create(def.Name, def.Min, def.Max, def.Order, def.Price, null, "system", utcNow));
                 changed = true;
                 continue;
             }
 
+            var price = match.Price > 0 ? match.Price : def.Price;
             if (match.MinDurationMinutes == def.Min
                 && match.MaxDurationMinutes == def.Max
-                && match.DisplayOrder == def.Order)
+                && match.DisplayOrder == def.Order
+                && match.Price == price)
                 continue;
 
-            match.Update(def.Name, def.Min, def.Max, def.Order, match.Notes, "system", utcNow);
+            match.Update(def.Name, def.Min, def.Max, def.Order, price, match.Notes, "system", utcNow);
             changed = true;
         }
 

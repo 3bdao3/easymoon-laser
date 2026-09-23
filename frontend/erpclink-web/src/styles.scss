@@ -647,6 +647,12 @@ a {
   font-size: var(--text-sm);
 }
 
+.service-chip__price {
+  font-size: var(--text-sm);
+  font-weight: 800;
+  color: var(--primary-dark);
+}
+
 .service-chip__duration {
   font-size: var(--text-xs);
   font-weight: 600;
