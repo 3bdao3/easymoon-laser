@@ -10,41 +10,94 @@
       <h2 class="card__title">الجلسة دي</h2>
       <p class="text-muted hub-hint">اكتب هيدفع كام، وكام نبضة اتاخدت في الجلسة. المتبقي يتحدث لوحده.</p>
 
-      <div class="session-form-grid">
-        <label class="form-field">
-          <span class="form-field__label">هيدفع كام</span>
-          <input class="form-field__input" type="number" min="0" step="0.01" inputmode="decimal" formControlName="amountPaid" placeholder="مثال: 500" />
-          <span class="form-field__hint">المطلوب: {{ money(dueAmount()) }}</span>
-        </label>
-        <label class="form-field">
-          <span class="form-field__label">نبضات الجلسة دي</span>
-          <input class="form-field__input" type="number" min="1" max="5000" inputmode="numeric" formControlName="pulsesConsumed" placeholder="مثال: 300" />
-        </label>
-      </div>
-
-      <div class="remain-grid">
-        <div class="remaining-box">
-          <span>متبقي النبضات</span>
-          <strong class="remaining-box__value">{{ pulsesLeft() ?? '—' }}</strong>
+      <div class="pay-columns">
+        <div class="pay-col">
+          <label class="form-field">
+            <span class="form-field__label">هيدفع كام</span>
+            <input class="form-field__input" type="number" min="0" step="0.01" inputmode="decimal" formControlName="amountPaid" placeholder="مثال: 500" />
+            <span class="form-field__hint">المطلوب: {{ money(dueAmount()) }}</span>
+          </label>
+          <div class="remaining-box">
+            <span>الفلوس الباقية بعد الدفع</span>
+            <strong class="remaining-box__value">{{ money(moneyLeft()) }}</strong>
+          </div>
         </div>
-        <div class="remaining-box">
-          <span>الفلوس الباقية بعد الدفع</span>
-          <strong class="remaining-box__value">{{ money(moneyLeft()) }}</strong>
+        <div class="pay-col">
+          <label class="form-field">
+            <span class="form-field__label">نبضات الجلسة دي</span>
+            <input class="form-field__input" type="number" min="1" max="5000" inputmode="numeric" formControlName="pulsesConsumed" placeholder="مثال: 300" />
+          </label>
+          <div class="remaining-box">
+            <span>متبقي النبضات</span>
+            <strong class="remaining-box__value">{{ pulsesLeft() ?? '—' }}</strong>
+          </div>
+        </div>
+        <div class="pay-col">
+          <label class="form-field">
+            <span class="form-field__label">وقت الجلسة دي</span>
+            <input class="form-field__input" type="number" min="1" max="480" inputmode="numeric" formControlName="sessionMinutes" placeholder="مثال: 20" />
+            <span class="form-field__hint">الإجمالي: {{ timeTotal() ?? '—' }} د</span>
+          </label>
+          <div class="remaining-box">
+            <span>المتبقي من الوقت</span>
+            <strong class="remaining-box__value">{{ timeLeft() ?? '—' }} د</strong>
+          </div>
         </div>
       </div>
 
       <h3 class="detail-section-title">الجلسة الجاية</h3>
-      <p class="text-muted hub-hint">أول ما تختار التاريخ والوقت تتعمل جلسة جديدة، ويتكتب فيها المتبقي من الفلوس والنبضات.</p>
-      <div class="session-form-grid">
-        <label class="form-field">
-          <span class="form-field__label">التاريخ</span>
-          <input class="form-field__input" type="date" formControlName="nextDate" [min]="minDate" />
-        </label>
-        <label class="form-field">
-          <span class="form-field__label">الوقت</span>
-          <input class="form-field__input" type="time" formControlName="nextTime" />
-        </label>
-      </div>
+      <p class="text-muted hub-hint">اكتب وقت الجلسة دي. المتبقي من الإجمالي يظهر لوحده، والمواعيد الجاية تتحسب عليه.</p>
+      <label class="form-field" style="max-width: 16rem">
+        <span class="form-field__label">التاريخ</span>
+        <input class="form-field__input" type="date" formControlName="nextDate" [min]="minDate" />
+      </label>
+
+      @if (form.controls.nextDate.value) {
+        <div class="slots-head">
+          <h3 class="detail-section-title" style="margin: 0">المواعيد المتاحة</h3>
+          <div class="slots-legend">
+            <span>🟢 متاح</span>
+            <span>🔴 محجوز</span>
+            <span>⚪ غير متاح</span>
+            <span>🌸 محدد</span>
+          </div>
+        </div>
+        @if (loadingSlots()) {
+          <app-loading-spinner label="جاري تحميل المواعيد المتاحة…" />
+        } @else if ((form.controls.sessionMinutes.value ?? 0) < 1) {
+          <p class="text-muted">اكتب وقت الجلسة دي الأول عشان المواعيد تتحسب على المتبقي.</p>
+        } @else if ((timeLeft() ?? 0) < 1) {
+          <p class="text-muted">مفيش وقت متبقي للجلسة الجاية.</p>
+        } @else if (slots().length === 0) {
+          <p class="text-muted">لا توجد فترات في اليوم ده.</p>
+        } @else {
+          <div class="day-slot-grid">
+            @for (slot of slots(); track slot.startTime) {
+              <button
+                type="button"
+                [class]="slotClass(slot)"
+                [disabled]="slot.status !== SlotStatus.Available || scheduling()"
+                (click)="selectSlot(slot)"
+              >
+                <span class="day-slot__time">{{ formatTimeAr(slot.startTime) }}</span>
+                @if (slot.status === SlotStatus.Available) {
+                  <span class="day-slot__meta">متاح · {{ slot.durationMinutes }} د</span>
+                } @else if (slot.status === SlotStatus.Booked) {
+                  <span class="day-slot__meta">محجوز</span>
+                  @if (slot.customerName) {
+                    <span class="day-slot__detail">{{ slot.customerName }}</span>
+                  }
+                  @if (slot.serviceNames) {
+                    <span class="day-slot__detail">{{ slot.serviceNames }}</span>
+                  }
+                } @else {
+                  <span class="day-slot__meta">غير متاح</span>
+                }
+              </button>
+            }
+          </div>
+        }
+      }
       @if (scheduling()) {
         <p class="text-muted">جاري إنشاء الجلسة الجاية…</p>
       } @else if (nextId()) {

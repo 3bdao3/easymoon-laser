@@ -8,15 +8,12 @@ import { Permissions } from '../../core/permissions/permissions';
 import { LaserDashboardApi } from '../laser-clinic/services/laser-dashboard-api.service';
 import { CustomersApi } from '../laser-clinic/services/customers-api.service';
 import {
-  CustomerListItemDto,
   LASER_APPOINTMENT_STATUS_BADGE,
   LASER_APPOINTMENT_STATUS_LABELS,
   LaserAppointmentDto,
   LaserAppointmentStatus,
   LaserDashboardDto,
-  formatDateAr,
-  formatTimeAr,
-  formatTimeRangeAr
+  formatTimeAr
 } from '../laser-clinic/models/laser-clinic.models';
 import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner/loading-spinner.component';
 import { HasPermissionDirective } from '../../shared/directives/has-permission.directive';
@@ -39,10 +36,8 @@ export class DashboardComponent implements OnInit {
   readonly loading = signal(true);
   readonly data = signal<LaserDashboardDto | null>(null);
   readonly customerCount = signal(0);
-  readonly recentCustomers = signal<CustomerListItemDto[]>([]);
   readonly date = new FormControl(new Date().toISOString().slice(0, 10), { nonNullable: true });
   readonly formatTimeAr = formatTimeAr;
-  readonly formatDateAr = formatDateAr;
 
   ngOnInit(): void {
     this.load();
@@ -71,7 +66,6 @@ export class DashboardComponent implements OnInit {
       next: ({ dash, customers }) => {
         this.data.set(dash);
         this.customerCount.set(customers.length);
-        this.recentCustomers.set(customers.slice(0, 30));
         this.loading.set(false);
       },
       error: () => this.loading.set(false)
@@ -82,26 +76,11 @@ export class DashboardComponent implements OnInit {
     return row.services?.map((s) => s.serviceName).join(' + ') || '—';
   }
 
-  lastBookingLabel(row: CustomerListItemDto): string {
-    const last = row.lastAppointment;
-    if (!last) return 'لا يوجد حجز سابق';
-    const services = last.serviceNames?.length ? last.serviceNames.join(' + ') : '—';
-    return `${this.formatDateAr(last.date)} · ${formatTimeRangeAr(last.startTime, last.endTime)} · ${services}`;
-  }
-
   statusLabel(status: LaserAppointmentStatus): string {
     return LASER_APPOINTMENT_STATUS_LABELS[status];
   }
 
   badgeClass(status: LaserAppointmentStatus): string {
     return LASER_APPOINTMENT_STATUS_BADGE[status];
-  }
-
-  lastStatusLabel(row: CustomerListItemDto): string {
-    return row.lastAppointment ? this.statusLabel(row.lastAppointment.status) : '—';
-  }
-
-  lastBadgeClass(row: CustomerListItemDto): string {
-    return row.lastAppointment ? this.badgeClass(row.lastAppointment.status) : 'badge--muted';
   }
 }

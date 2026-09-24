@@ -105,44 +105,6 @@
           </div>
         }
       </section>
-
-      <section class="card dash__customers" *appHasPermission="permissions.LaserCustomersView">
-        <div class="dash__today-head">
-          <h2 class="card__title" style="margin: 0">العملاء حسب آخر حجز</h2>
-          <a class="link" routerLink="/app/customers">عرض الكل</a>
-        </div>
-
-        @if (recentCustomers().length === 0) {
-          <p class="text-muted">لا توجد عميلات بعد.</p>
-        } @else {
-          <div class="table-wrap">
-            <table class="table table-cards">
-              <thead>
-                <tr>
-                  <th>العميلة</th>
-                  <th>الهاتف</th>
-                  <th>آخر حجز</th>
-                  <th>حالة آخر حجز</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (row of recentCustomers(); track row.id) {
-                  <tr>
-                    <td data-label="العميلة">
-                      <a class="link" [routerLink]="['/app/customers', row.id]">{{ row.fullName }}</a>
-                    </td>
-                    <td data-label="الهاتف">{{ row.phoneNumber }}</td>
-                    <td data-label="آخر حجز">{{ lastBookingLabel(row) }}</td>
-                    <td data-label="حالة آخر حجز">
-                      <span class="badge" [class]="lastBadgeClass(row)">{{ lastStatusLabel(row) }}</span>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
-      </section>
     } @else {
       <p class="text-muted">تعذّر تحميل بيانات اللوحة. تحقق من الصلاحيات أو اتصال الخادم.</p>
     }

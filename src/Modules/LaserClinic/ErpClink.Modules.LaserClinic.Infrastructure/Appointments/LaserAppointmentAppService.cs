@@ -442,7 +442,8 @@ public sealed class LaserAppointmentAppService : ILaserAppointmentAppService
             serviceIds,
             cancellationToken,
             excludeAppointmentId: id,
-            serviceDurationOverrides: ToOverrideMap(overrides));
+            serviceDurationOverrides: ToOverrideMap(overrides),
+            allowExistingSlot: true);
 
         await ApplyPulseBalanceAsync(
             entity.CustomerId,
@@ -495,10 +496,11 @@ public sealed class LaserAppointmentAppService : ILaserAppointmentAppService
             .SumAsync(a => a.AmountPaid ?? 0m, cancellationToken);
 
         var durationUsed = await _db.Appointments.AsNoTracking()
-            .Where(a => a.CustomerId == c.Id && a.Status == LaserAppointmentStatus.Attended)
+            .Where(a => a.CustomerId == c.Id && a.Status != LaserAppointmentStatus.Cancelled)
+            .Where(a => a.AmountPaid != null || a.Services.Any(s => s.PulsesConsumed > 0))
             .SumAsync(a => (int?)a.DurationMinutes ?? 0, cancellationToken);
 
-        var priceTotal = c.PackagePriceTotal;
+        var priceTotal = c.PackagePriceTotal ?? await CatalogPriceTotalAsync(c.Id, cancellationToken);
         var remainingAmount = priceTotal is decimal p ? Math.Max(0, p - amountPaid) : 0m;
         var durationTotal = c.PackageDurationTotalMinutes;
         var remainingDuration = durationTotal is int d ? Math.Max(0, d - durationUsed) : 0;
@@ -513,6 +515,21 @@ public sealed class LaserAppointmentAppService : ILaserAppointmentAppService
             durationTotal,
             durationUsed,
             remainingDuration);
+    }
+
+    private async Task<decimal?> CatalogPriceTotalAsync(Guid customerId, CancellationToken cancellationToken)
+    {
+        var prices = await (
+            from line in _db.AppointmentServices.AsNoTracking()
+            join appt in _db.Appointments.AsNoTracking() on line.AppointmentId equals appt.Id
+            join svc in _db.LaserServices.AsNoTracking() on line.LaserServiceId equals svc.Id
+            where appt.CustomerId == customerId && appt.Status != LaserAppointmentStatus.Cancelled
+            select new { svc.Id, svc.Price }
+        ).Distinct().ToListAsync(cancellationToken);
+
+        if (prices.Count == 0)
+            return null;
+        return prices.Sum(p => p.Price);
     }
 
     private static CustomerPulseBalanceDto MapPulseBalance(Domain.Customers.Customer c)
@@ -553,7 +570,8 @@ public sealed class LaserAppointmentAppService : ILaserAppointmentAppService
         IReadOnlyList<Guid>? laserServiceIds,
         CancellationToken cancellationToken,
         Guid? excludeAppointmentId = null,
-        IReadOnlyDictionary<Guid, LineOverride>? serviceDurationOverrides = null)
+        IReadOnlyDictionary<Guid, LineOverride>? serviceDurationOverrides = null,
+        bool allowExistingSlot = false)
     {
         var services = await LoadActiveServicesAsync(laserServiceIds, cancellationToken);
         // Duration is required for pulse services at booking; pulses are recorded later from the customer file.
@@ -567,12 +585,15 @@ public sealed class LaserAppointmentAppService : ILaserAppointmentAppService
         if (startTime < settings.OpeningTime || clinicalEnd > settings.ClosingTime)
             throw new AppException("laser.appointment.outside_hours", "الموعد خارج مواعيد العمل.", 400);
 
-        var nowEgypt = GetEgyptNow();
-        var todayEgypt = DateOnly.FromDateTime(nowEgypt);
-        if (date < todayEgypt)
-            throw new AppException("laser.appointment.past_date", "لا يمكن حجز موعد في تاريخ ماضٍ.", 400);
-        if (date == todayEgypt && startTime <= TimeOnly.FromDateTime(nowEgypt))
-            throw new AppException("laser.appointment.past_time", "لا يمكن حجز موعد في وقت ماضٍ.", 400);
+        if (!allowExistingSlot)
+        {
+            var nowEgypt = GetEgyptNow();
+            var todayEgypt = DateOnly.FromDateTime(nowEgypt);
+            if (date < todayEgypt)
+                throw new AppException("laser.appointment.past_date", "لا يمكن حجز موعد في تاريخ ماضٍ.", 400);
+            if (date == todayEgypt && startTime <= TimeOnly.FromDateTime(nowEgypt))
+                throw new AppException("laser.appointment.past_time", "لا يمكن حجز موعد في وقت ماضٍ.", 400);
+        }
 
         var occupied = await GetOccupiedAsync(date, excludeAppointmentId, settings.DefaultBufferMinutes, cancellationToken);
         if (AvailabilityCalculator.Conflicts(startTime, blockedEnd, occupied))

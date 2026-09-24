@@ -75,7 +75,7 @@
     grid-template-columns: 1fr;
   }
 
-  .session-form-grid {
+  .pay-columns {
     grid-template-columns: 1fr;
   }
 }
@@ -115,11 +115,32 @@
   font-size: var(--text-xs);
 }
 
-.session-form-grid {
+.pay-columns {
   display: grid;
   gap: var(--space-4);
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
   margin-top: var(--space-4);
+}
+
+.pay-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.pay-col .form-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.pay-col .remaining-box {
+  margin-top: auto;
+  min-height: 5.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .remaining-box {
@@ -143,7 +164,81 @@
 }
 
 .session-pay {
-  max-width: 40rem;
+  max-width: 64rem;
+}
+
+.slots-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+
+.slots-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.day-slot-grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+}
+
+.day-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  text-align: start;
+  min-height: 5.5rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border);
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.day-slot__time {
+  font-weight: 800;
+  font-size: var(--text-sm);
+}
+
+.day-slot__meta,
+.day-slot__detail {
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.day-slot--available {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+
+.day-slot--available:hover {
+  background: var(--primary-light);
+}
+
+.day-slot--selected {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.day-slot--booked,
+.day-slot--unavailable,
+.day-slot:disabled {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #6b7280;
+  cursor: not-allowed;
 }
 
 .remain-grid {

@@ -6,12 +6,16 @@ import { CustomersApi } from '../../laser-clinic/services/customers-api.service'
 import { LaserAppointmentsApi } from '../../laser-clinic/services/laser-appointments-api.service';
 import { LaserServicesApi } from '../../laser-clinic/services/laser-services-api.service';
 import {
+  AvailabilitySlotDto,
+  AvailabilitySlotStatus,
   CustomerDto,
+  LaserAppointmentDto,
+  LaserAppointmentStatus,
   LaserServiceDto,
   SessionDetailDto,
-  LaserAppointmentDto,
   appointmentPulsesConsumed,
   formatDateAr,
+  formatTimeAr,
   toApiTime
 } from '../../laser-clinic/models/laser-clinic.models';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -42,13 +46,20 @@ export class LaserAppointmentDetailComponent implements OnInit, OnDestroy {
   readonly catalog = signal<LaserServiceDto[]>([]);
   readonly amountInput = signal<number | null>(null);
   readonly pulsesInput = signal<number | null>(null);
+  readonly durationInput = signal<number | null>(null);
   readonly nextId = signal<string | null>(null);
+  readonly loadingSlots = signal(false);
+  readonly slots = signal<AvailabilitySlotDto[]>([]);
+  readonly selectedSlot = signal<AvailabilitySlotDto | null>(null);
   readonly formatDateAr = formatDateAr;
+  readonly formatTimeAr = formatTimeAr;
+  readonly SlotStatus = AvailabilitySlotStatus;
   readonly minDate = new Date().toISOString().slice(0, 10);
 
   readonly form = new FormGroup({
     amountPaid: new FormControl<number | null>(null, { validators: [Validators.min(0)] }),
     pulsesConsumed: new FormControl<number | null>(null, { validators: [Validators.min(1), Validators.max(5000)] }),
+    sessionMinutes: new FormControl<number | null>(null, { validators: [Validators.min(1), Validators.max(480)] }),
     nextDate: new FormControl('', { nonNullable: true }),
     nextTime: new FormControl('', { nonNullable: true })
   });
@@ -114,14 +125,49 @@ export class LaserAppointmentDetailComponent implements OnInit, OnDestroy {
     return Math.max(0, before - pay);
   });
 
+  readonly timeTotal = computed(() => {
+    const packageMinutes = this.pulseBalance()?.packageDurationTotalMinutes;
+    if (packageMinutes != null && packageMinutes > 0) {
+      return packageMinutes;
+    }
+    const booked = this.item()?.durationMinutes ?? 0;
+    return booked > 0 ? booked : null;
+  });
+
+  readonly timeLeft = computed(() => {
+    const total = this.timeTotal();
+    if (total == null) {
+      return null;
+    }
+    const usedAll = this.pulseBalance()?.durationUsedMinutes ?? 0;
+    const savedHere = this.item()?.status === LaserAppointmentStatus.Attended ? this.item()!.durationMinutes : 0;
+    const usedElsewhere = Math.max(0, usedAll - savedHere);
+    const typed = this.durationInput();
+    const usedNow = typed != null && typed >= 1 ? typed : 0;
+    return Math.max(0, total - usedElsewhere - usedNow);
+  });
+
   ngOnInit(): void {
     this.form.valueChanges.pipe(takeUntil(this.destroy$)).subscribe((value) => {
       this.amountInput.set(value.amountPaid ?? null);
       this.pulsesInput.set(value.pulsesConsumed ?? null);
+      this.durationInput.set(value.sessionMinutes ?? null);
     });
 
-    this.form.controls.nextDate.valueChanges.pipe(debounceTime(400), takeUntil(this.destroy$)).subscribe(() => this.scheduleNext());
-    this.form.controls.nextTime.valueChanges.pipe(debounceTime(400), takeUntil(this.destroy$)).subscribe(() => this.scheduleNext());
+    this.form.controls.sessionMinutes.valueChanges.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => {
+      if (!this.form.controls.nextDate.value) {
+        return;
+      }
+      this.selectedSlot.set(null);
+      this.form.controls.nextTime.setValue('', { emitEvent: false });
+      this.loadSlots();
+    });
+
+    this.form.controls.nextDate.valueChanges.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => {
+      this.selectedSlot.set(null);
+      this.form.controls.nextTime.setValue('', { emitEvent: false });
+      this.loadSlots();
+    });
 
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) {
@@ -146,15 +192,18 @@ export class LaserAppointmentDetailComponent implements OnInit, OnDestroy {
       next: (row) => {
         this.detail.set(row);
         const savedPulses = appointmentPulsesConsumed(row.appointment);
+        const savedMinutes = row.appointment.durationMinutes > 0 ? row.appointment.durationMinutes : null;
         this.form.patchValue(
           {
             amountPaid: row.appointment.amountPaid ?? null,
-            pulsesConsumed: savedPulses
+            pulsesConsumed: savedPulses,
+            sessionMinutes: savedMinutes
           },
           { emitEvent: false }
         );
         this.amountInput.set(row.appointment.amountPaid ?? null);
         this.pulsesInput.set(savedPulses);
+        this.durationInput.set(savedMinutes);
         this.customersApi.getById(row.appointment.customerId).subscribe({
           next: (customer) => {
             this.customer.set(customer);
@@ -178,6 +227,66 @@ export class LaserAppointmentDetailComponent implements OnInit, OnDestroy {
     return `${value} ج.م`;
   }
 
+  loadSlots(): void {
+    const appt = this.item();
+    const date = this.form.controls.nextDate.value;
+    if (!appt || !date) {
+      this.slots.set([]);
+      return;
+    }
+    const typed = this.form.controls.sessionMinutes.value;
+    if (typed == null || typed < 1) {
+      this.slots.set([]);
+      return;
+    }
+    const minutes = this.timeLeft();
+    if (minutes == null || minutes < 1) {
+      this.slots.set([]);
+      this.loadingSlots.set(false);
+      return;
+    }
+    const ids = appt.services.map((s) => s.laserServiceId);
+    const overrides = this.splitDuration(appt, minutes);
+    this.loadingSlots.set(true);
+    this.api.getAvailability(date, ids, undefined, overrides).subscribe({
+      next: (result) => {
+        this.slots.set(result.slots ?? []);
+        this.loadingSlots.set(false);
+      },
+      error: () => {
+        this.slots.set([]);
+        this.loadingSlots.set(false);
+        this.toast.error('تعذّر تحميل المواعيد المتاحة');
+      }
+    });
+  }
+
+  selectSlot(slot: AvailabilitySlotDto): void {
+    if (slot.status !== AvailabilitySlotStatus.Available || this.scheduling()) {
+      return;
+    }
+    if (!this.canRecord() || (this.form.controls.sessionMinutes.value ?? 0) < 1) {
+      this.toast.error('اكتب المبلغ والنبضات ووقت الجلسة دي الأول');
+      return;
+    }
+    this.selectedSlot.set(slot);
+    this.form.controls.nextTime.setValue(slot.startTime.slice(0, 5), { emitEvent: false });
+    this.scheduleNext();
+  }
+
+  slotClass(slot: AvailabilitySlotDto): string {
+    if (this.selectedSlot()?.startTime === slot.startTime) {
+      return 'day-slot day-slot--selected';
+    }
+    if (slot.status === AvailabilitySlotStatus.Available) {
+      return 'day-slot day-slot--available';
+    }
+    if (slot.status === AvailabilitySlotStatus.Booked) {
+      return 'day-slot day-slot--booked';
+    }
+    return 'day-slot day-slot--unavailable';
+  }
+
   saveSession(): void {
     const appt = this.item();
     if (!appt || !this.canRecord()) {
@@ -189,7 +298,12 @@ export class LaserAppointmentDetailComponent implements OnInit, OnDestroy {
     this.recordCurrent(appt.id, () => {
       this.saving.set(false);
       this.toast.success('اتحفظت الجلسة');
-      this.refreshNextNotes();
+      if (this.nextId()) {
+        this.refreshNextNotes();
+        void this.router.navigate(['/app/customers', appt.customerId]);
+        return;
+      }
+      void this.router.navigate(['/app/customers', appt.customerId]);
     });
   }
 
@@ -231,7 +345,8 @@ export class LaserAppointmentDetailComponent implements OnInit, OnDestroy {
 
   private recordCurrent(id: string, done: () => void): void {
     const appt = this.item();
-    const duration = appt && appt.durationMinutes > 0 ? appt.durationMinutes : 30;
+    const typed = this.form.controls.sessionMinutes.value;
+    const duration = typed != null && typed >= 1 ? typed : appt && appt.durationMinutes > 0 ? appt.durationMinutes : 30;
     const pulses = this.isPulseSession() ? this.form.controls.pulsesConsumed.value : null;
     this.api
       .recordSession(id, {
@@ -257,10 +372,16 @@ export class LaserAppointmentDetailComponent implements OnInit, OnDestroy {
   private createOrUpdateNext(appt: LaserAppointmentDto, date: string, time: string): void {
     const notes = this.leftoverNote();
     const laserServiceIds = appt.services.map((s) => s.laserServiceId);
-    const serviceDurationOverrides = appt.services.map((s) => ({
-      serviceId: s.laserServiceId,
-      durationMinutes: s.durationMinutes > 0 ? s.durationMinutes : appt.durationMinutes || 30,
-      pulsesConsumed: null
+    const nextMinutes = this.timeLeft();
+    if (nextMinutes == null || nextMinutes < 1) {
+      this.scheduling.set(false);
+      this.toast.error('مفيش وقت متبقي للجلسة الجاية');
+      return;
+    }
+    const serviceDurationOverrides = Object.entries(this.splitDuration(appt, nextMinutes)).map(([serviceId, durationMinutes]) => ({
+      serviceId,
+      durationMinutes,
+      pulsesConsumed: null as number | null
     }));
     const body = {
       appointmentDate: date,
@@ -280,13 +401,14 @@ export class LaserAppointmentDetailComponent implements OnInit, OnDestroy {
         this.nextId.set(created.id);
         this.scheduling.set(false);
         this.saving.set(false);
-        if (createdNow) {
-          this.toast.success('اتعملت الجلسة الجاية واتكتب فيها المتبقي');
-        }
+        this.toast.success(createdNow ? 'اتحفظت الجلسة واتعملت الجلسة الجاية' : 'اتحدثت الجلسة الجاية');
+        void this.router.navigate(['/app/customers', appt.customerId]);
       },
       error: (err) => {
         this.scheduling.set(false);
         this.saving.set(false);
+        this.selectedSlot.set(null);
+        this.form.controls.nextTime.setValue('', { emitEvent: false });
         const msg = err?.error?.detail || err?.error?.title || err?.error?.message || 'المعاد ده مش متاح، اختار وقت تاني';
         this.toast.error(msg);
       }
@@ -307,11 +429,13 @@ export class LaserAppointmentDetailComponent implements OnInit, OnDestroy {
         startTime: toApiTime(time),
         laserServiceIds: appt.services.map((s) => s.laserServiceId),
         notes: this.leftoverNote(),
-        serviceDurationOverrides: appt.services.map((s) => ({
-          serviceId: s.laserServiceId,
-          durationMinutes: s.durationMinutes > 0 ? s.durationMinutes : appt.durationMinutes || 30,
-          pulsesConsumed: null
-        }))
+        serviceDurationOverrides: Object.entries(this.splitDuration(appt, this.timeLeft() ?? appt.durationMinutes)).map(
+          ([serviceId, durationMinutes]) => ({
+            serviceId,
+            durationMinutes,
+            pulsesConsumed: null
+          })
+        )
       })
       .subscribe({ error: () => undefined });
   }
@@ -319,8 +443,30 @@ export class LaserAppointmentDetailComponent implements OnInit, OnDestroy {
   private leftoverNote(): string {
     const pulses = this.pulsesLeft();
     const money = this.moneyLeft();
+    const time = this.timeLeft();
     const pulseLine = pulses == null ? 'متبقي النبضات: —' : `متبقي النبضات: ${pulses}`;
     const moneyLine = money == null ? 'متبقي الفلوس: —' : `متبقي الفلوس: ${money} ج.م`;
-    return `${pulseLine}\n${moneyLine}`;
+    const timeLine = time == null ? 'متبقي الوقت: —' : `متبقي الوقت: ${time} د`;
+    return `${pulseLine}\n${moneyLine}\n${timeLine}`;
+  }
+
+  private splitDuration(appt: LaserAppointmentDto, minutes: number): Record<string, number> {
+    const lines = appt.services;
+    const overrides: Record<string, number> = {};
+    if (!lines.length) {
+      return overrides;
+    }
+    const original = lines.reduce((sum, line) => sum + (line.durationMinutes > 0 ? line.durationMinutes : 0), 0) || lines.length;
+    let left = minutes;
+    lines.forEach((line, index) => {
+      if (index === lines.length - 1) {
+        overrides[line.laserServiceId] = Math.max(1, left);
+        return;
+      }
+      const share = Math.max(1, Math.round(((line.durationMinutes > 0 ? line.durationMinutes : 1) / original) * minutes));
+      overrides[line.laserServiceId] = share;
+      left -= share;
+    });
+    return overrides;
   }
 }

@@ -287,10 +287,11 @@ public sealed class CustomerAppService : ICustomerAppService
             .SumAsync(a => a.AmountPaid ?? 0m, cancellationToken);
 
         var durationUsed = await _db.Appointments.AsNoTracking()
-            .Where(a => a.CustomerId == c.Id && a.Status == LaserAppointmentStatus.Attended)
+            .Where(a => a.CustomerId == c.Id && a.Status != LaserAppointmentStatus.Cancelled)
+            .Where(a => a.AmountPaid != null || a.Services.Any(s => s.PulsesConsumed > 0))
             .SumAsync(a => (int?)a.DurationMinutes ?? 0, cancellationToken);
 
-        var priceTotal = c.PackagePriceTotal;
+        var priceTotal = c.PackagePriceTotal ?? await CatalogPriceTotalAsync(c.Id, cancellationToken);
         var remainingAmount = priceTotal is decimal p ? Math.Max(0, p - amountPaid) : 0m;
         var durationTotal = c.PackageDurationTotalMinutes;
         var remainingDuration = durationTotal is int d ? Math.Max(0, d - durationUsed) : 0;
@@ -305,6 +306,21 @@ public sealed class CustomerAppService : ICustomerAppService
             durationTotal,
             durationUsed,
             remainingDuration);
+    }
+
+    private async Task<decimal?> CatalogPriceTotalAsync(Guid customerId, CancellationToken cancellationToken)
+    {
+        var prices = await (
+            from line in _db.AppointmentServices.AsNoTracking()
+            join appt in _db.Appointments.AsNoTracking() on line.AppointmentId equals appt.Id
+            join svc in _db.LaserServices.AsNoTracking() on line.LaserServiceId equals svc.Id
+            where appt.CustomerId == customerId && appt.Status != LaserAppointmentStatus.Cancelled
+            select new { svc.Id, svc.Price }
+        ).Distinct().ToListAsync(cancellationToken);
+
+        if (prices.Count == 0)
+            return null;
+        return prices.Sum(p => p.Price);
     }
 
     private static string RequireEgyptianMobile(string phoneNumber)

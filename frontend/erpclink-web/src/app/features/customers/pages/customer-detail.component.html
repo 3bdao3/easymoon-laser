@@ -193,31 +193,32 @@
       </section>
 
       <section class="card">
-        <h2 class="card__title">الجلسات السابقة</h2>
-        <p class="text-muted session-history-hint">الجلسات التي نُفذت من قبل، والمبلغ المدفوع في كل مرة.</p>
-        @if (pastAppointments().length === 0) {
-          <p class="text-muted">لا توجد جلسات سابقة.</p>
+        <h2 class="card__title">جلسات العميل</h2>
+        <p class="text-muted session-history-hint">كل جلسة محفوظة. فتح الجلسة يرجّع آخر تعديل، والجلسة الجاية تكمل على المتبقي.</p>
+        @if (allSessions().length === 0) {
+          <p class="text-muted">لا توجد جلسات.</p>
         } @else {
           <div class="table-wrap">
             <table class="table table-cards">
               <thead>
                 <tr>
-                  <th>التاريخ</th>
                   <th>الجلسة</th>
+                  <th>التاريخ</th>
                   <th>المدة</th>
                   <th>نبضات الجلسة</th>
                   <th>المدفوع</th>
                   <th>الحالة</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
-                @for (a of pastAppointments(); track a.id) {
+                @for (a of allSessions(); track a.id; let i = $index) {
                   <tr>
+                    <td data-label="الجلسة">جلسة {{ i + 1 }} · {{ serviceNames(a) }}</td>
                     <td data-label="التاريخ">
                       {{ formatDateAr(a.appointmentDate) }}
                       <span class="text-muted"> · {{ formatTimeAr(a.startTime) }}</span>
                     </td>
-                    <td data-label="الجلسة">{{ serviceNames(a) }}</td>
                     <td data-label="المدة">
                       <app-time-span [start]="a.startTime" [end]="a.endTime" />
                     </td>
@@ -231,6 +232,9 @@
                     <td data-label="المدفوع">{{ money(a.amountPaid) }}</td>
                     <td data-label="الحالة">
                       <span class="badge" [class]="badgeClass(a.status)">{{ statusLabel(a.status) }}</span>
+                    </td>
+                    <td data-label="">
+                      <a class="btn btn--ghost btn--sm" [routerLink]="['/app/appointments', a.id]">فتح الجلسة</a>
                     </td>
                   </tr>
                 }

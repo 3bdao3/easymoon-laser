@@ -147,8 +147,24 @@ export class CustomerDetailComponent implements OnInit {
     });
   });
 
+  readonly allSessions = computed(() => {
+    const h = this.history();
+    if (!h) {
+      return [] as LaserAppointmentDto[];
+    }
+    return [...h.previous, ...h.upcoming]
+      .filter((a) => a.status !== LaserAppointmentStatus.Cancelled)
+      .sort((a, b) => {
+        const d = a.appointmentDate.localeCompare(b.appointmentDate);
+        if (d !== 0) {
+          return d;
+        }
+        return a.startTime.localeCompare(b.startTime);
+      });
+  });
+
   readonly totalPastPaid = computed(() =>
-    this.pastAppointments().reduce((sum, row) => sum + (row.amountPaid ?? 0), 0)
+    this.allSessions().reduce((sum, row) => sum + (row.amountPaid ?? 0), 0)
   );
 
   ngOnInit(): void {
